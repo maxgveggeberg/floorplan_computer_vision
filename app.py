@@ -228,7 +228,7 @@ else:
         else:
             columns = [
                 'detection_name', 'class_name', 'confidence', 'x', 'y', 'width', 'height',
-                'x1', 'y1', 'x2', 'y2', 'area', 'detection_uuid'
+                'wall_direction', 'x1', 'y1', 'x2', 'y2', 'detection_uuid'
             ]
 
             available_columns = [col for col in columns if col in df_filtered.columns]

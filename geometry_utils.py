@@ -46,3 +46,57 @@ def add_detection_names(
     df_with_names = df.copy()
     df_with_names[name_col] = detection_names
     return df_with_names
+
+
+def add_wall_direction(
+    df: pd.DataFrame,
+    *,
+    class_col: str = "class_name",
+    width_col: str = "width",
+    height_col: str = "height",
+    direction_col: str = "wall_direction",
+) -> pd.DataFrame:
+    """Annotate wall detections with a direction label.
+
+    A wall is considered horizontal when its width exceeds its height and
+    vertical when the height exceeds the width. Non-wall detections receive an
+    empty string to keep the column present without implying direction.
+
+    Args:
+        df: DataFrame containing detection geometry.
+        class_col: Name of the column holding class labels.
+        width_col: Name of the width column.
+        height_col: Name of the height column.
+        direction_col: Name of the output direction column.
+
+    Returns:
+        Copy of the DataFrame including the ``direction_col`` column.
+    """
+    required_columns = {class_col, width_col, height_col}
+    missing = required_columns - set(df.columns)
+    if missing:
+        missing_list = ", ".join(sorted(missing))
+        raise KeyError(f"DataFrame must contain columns: {missing_list}")
+
+    if df.empty:
+        df_with_direction = df.copy()
+        df_with_direction[direction_col] = []
+        return df_with_direction
+
+    df_with_direction = df.copy()
+
+    def _determine_direction(row: pd.Series) -> str:
+        if str(row[class_col]).lower() != "wall":
+            return ""
+
+        width = row[width_col]
+        height = row[height_col]
+
+        if width > height:
+            return "horizontal"
+        if height > width:
+            return "vertical"
+        return "square"
+
+    df_with_direction[direction_col] = df_with_direction.apply(_determine_direction, axis=1)
+    return df_with_direction
