@@ -33,6 +33,9 @@ if 'ocr_source_name' not in st.session_state:
     st.session_state.ocr_source_name = None
 if 'current_ocr_run_id' not in st.session_state:
     st.session_state.current_ocr_run_id = None
+# Wall visibility controls
+if 'wall_visibility' not in st.session_state:
+    st.session_state.wall_visibility = {}
 # OCR control settings
 if 'show_ocr_boxes' not in st.session_state:
     st.session_state.show_ocr_boxes = False
@@ -172,6 +175,7 @@ with st.sidebar:
             st.session_state.raw_json = None
             st.session_state.source_name = None
             st.session_state.current_run_id = None
+            st.session_state.wall_visibility = {}
             st.rerun()
 
 if st.session_state.df is None or st.session_state.df.empty:
@@ -197,10 +201,43 @@ else:
             st.warning("No detections match the current filters.")
         else:
             canvas_w, canvas_h = cv_parser.infer_canvas_size(df_filtered)
-            
+
+            wall_mask = df_filtered['class_name'].str.lower() == 'wall'
+            wall_detections = df_filtered.loc[wall_mask, [
+                'detection_uuid',
+                'detection_name',
+                'wall_direction',
+                'confidence'
+            ]].copy()
+
+            current_wall_ids = set(wall_detections['detection_uuid'].tolist())
+            stored_visibility = st.session_state.wall_visibility
+
+            stale_ids = [wall_id for wall_id in list(stored_visibility.keys())
+                         if wall_id not in current_wall_ids]
+            for wall_id in stale_ids:
+                stored_visibility.pop(wall_id, None)
+
+            for wall_id in current_wall_ids:
+                widget_key = f"wall_visibility_{wall_id}"
+                if widget_key in st.session_state:
+                    stored_visibility[wall_id] = bool(st.session_state[widget_key])
+                else:
+                    stored_visibility.setdefault(wall_id, True)
+
+            hidden_wall_ids = [
+                wall_id for wall_id, is_visible in stored_visibility.items()
+                if not is_visible
+            ]
+
+            if hidden_wall_ids:
+                df_visible = df_filtered[~df_filtered['detection_uuid'].isin(hidden_wall_ids)]
+            else:
+                df_visible = df_filtered
+
             fig = viz.make_figure(canvas_w, canvas_h)
-            viz.add_boxes(fig, df_filtered, show_labels=show_labels)
-            
+            viz.add_boxes(fig, df_visible, show_labels=show_labels)
+
             # Add OCR overlay if available
             if st.session_state.ocr_df is not None and not st.session_state.ocr_df.empty:
                 ocr_scaled = ocr_parser.scale_ocr_to_detections(
@@ -215,14 +252,33 @@ else:
                                show_boxes=st.session_state.show_ocr_boxes, 
                                text_size=st.session_state.ocr_text_size,
                                min_confidence=st.session_state.ocr_confidence_threshold/100)
-            
+
             st.plotly_chart(fig, use_container_width=True)
-            
-            st.caption(f"Showing {len(df_filtered)} of {len(df)} detections")
-    
+
+            st.caption(f"Showing {len(df_visible)} of {len(df)} detections")
+
+            if not wall_detections.empty:
+                st.divider()
+                st.markdown("#### Wall Visibility")
+
+                wall_detections = wall_detections.sort_values('detection_name')
+                num_columns = min(3, len(wall_detections)) or 1
+                wall_cols = st.columns(num_columns)
+
+                for idx, wall in enumerate(wall_detections.itertuples(index=False)):
+                    col = wall_cols[idx % num_columns]
+                    wall_label = wall.detection_name
+                    if getattr(wall, 'wall_direction', ''):
+                        wall_label = f"{wall_label} ({wall.wall_direction})"
+
+                    checkbox_key = f"wall_visibility_{wall.detection_uuid}"
+                    default_value = stored_visibility.get(wall.detection_uuid, True)
+                    is_visible = col.checkbox(wall_label, value=default_value, key=checkbox_key)
+                    stored_visibility[wall.detection_uuid] = is_visible
+
     with tab2:
         st.subheader("Detection Data")
-        
+
         if df_filtered.empty:
             st.warning("No detections match the current filters.")
         else:
