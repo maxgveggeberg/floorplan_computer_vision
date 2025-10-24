@@ -110,13 +110,47 @@ with st.sidebar:
             step=0.05
         )
         
-        all_classes = sorted(st.session_state.df['class_name'].unique().tolist())
-        selected_classes = st.multiselect(
-            "Filter by Class",
-            options=all_classes,
-            default=all_classes
-        )
+        st.divider()
+        st.subheader("Class Visibility")
         
+        all_classes = sorted(st.session_state.df['class_name'].unique().tolist())
+        
+        # Initialize class visibility states if not present
+        for class_name in all_classes:
+            if f"class_{class_name}" not in st.session_state:
+                st.session_state[f"class_{class_name}"] = True
+        
+        # Callback functions for toggle buttons
+        def show_all_classes():
+            for class_name in all_classes:
+                st.session_state[f"class_{class_name}"] = True
+        
+        def hide_all_classes():
+            for class_name in all_classes:
+                st.session_state[f"class_{class_name}"] = False
+        
+        # Quick toggle buttons with callbacks
+        col1, col2 = st.columns(2)
+        with col1:
+            st.button("Show All", key="show_all_classes", on_click=show_all_classes)
+        with col2:
+            st.button("Hide All", key="hide_all_classes", on_click=hide_all_classes)
+        
+        # Create columns for checkboxes (2 columns for better layout)
+        cols = st.columns(2)
+        selected_classes = []
+        
+        for i, class_name in enumerate(all_classes):
+            col_idx = i % 2
+            with cols[col_idx]:
+                # Use the session state value for the checkbox
+                if st.checkbox(class_name, key=f"class_{class_name}"):
+                    selected_classes.append(class_name)
+        
+        # Update session state with currently selected classes
+        st.session_state.selected_classes = selected_classes
+        
+        st.divider()
         show_labels = st.checkbox("Show Labels", value=True)
         
         st.divider()
@@ -145,9 +179,13 @@ if st.session_state.df is None or st.session_state.df.empty:
 else:
     df = st.session_state.df
     
+    # Use selected classes from session state for filtering
+    if 'selected_classes' not in st.session_state:
+        st.session_state.selected_classes = df['class_name'].unique().tolist()
+    
     df_filtered = df[
         (df['confidence'] >= confidence_threshold) &
-        (df['class_name'].isin(selected_classes))
+        (df['class_name'].isin(st.session_state.selected_classes))
     ]
     
     tab1, tab2, tab3, tab4 = st.tabs(["Visualizer", "Detections Table", "Summary", "OCR"])
