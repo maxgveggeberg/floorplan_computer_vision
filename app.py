@@ -226,10 +226,14 @@ else:
         if df_filtered.empty:
             st.warning("No detections match the current filters.")
         else:
-            display_df = df_filtered[[
-                'class_name', 'confidence', 'x', 'y', 'width', 'height',
+            columns = [
+                'detection_name', 'class_name', 'confidence', 'x', 'y', 'width', 'height',
                 'x1', 'y1', 'x2', 'y2', 'area', 'detection_uuid'
-            ]].copy()
+            ]
+
+            available_columns = [col for col in columns if col in df_filtered.columns]
+
+            display_df = df_filtered[available_columns].copy()
             
             display_df = display_df.sort_values('confidence', ascending=False)
             

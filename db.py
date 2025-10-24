@@ -3,6 +3,8 @@ from typing import Optional, List
 from datetime import datetime
 import pandas as pd
 
+from geometry_utils import add_detection_names
+
 
 class Run(SQLModel, table=True):
     """Record for each uploaded JSON file."""
@@ -192,7 +194,8 @@ def load_detections(run_id: int) -> pd.DataFrame:
                 'area': det.width * det.height
             })
         
-        return pd.DataFrame(data)
+        df = pd.DataFrame(data)
+        return add_detection_names(df)
 
 
 def create_ocr_run(source_name: str, raw_json: str, pages: int = 1) -> OCRRun:

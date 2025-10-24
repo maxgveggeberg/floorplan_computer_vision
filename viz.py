@@ -93,6 +93,7 @@ def add_boxes(fig: go.Figure, df_filtered: pd.DataFrame, show_labels: bool = Fal
     for _, row in df_filtered.iterrows():
         x1, y1, x2, y2 = row['x1'], row['y1'], row['x2'], row['y2']
         class_name = row['class_name']
+        detection_name = row.get('detection_name', class_name)
         confidence = row['confidence']
         color = color_map.get(class_name, '#000000')
         
@@ -106,7 +107,7 @@ def add_boxes(fig: go.Figure, df_filtered: pd.DataFrame, show_labels: bool = Fal
         )
         
         if show_labels:
-            label_text = f"{class_name} ({confidence:.2f})"
+            label_text = f"{detection_name} ({confidence:.2f})"
             fig.add_annotation(
                 x=x1,
                 y=y1,
