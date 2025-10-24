@@ -69,20 +69,22 @@ with st.sidebar:
     saved_runs = db.list_runs()
     if saved_runs:
         st.divider()
-        run_options = {f"{r.source_name} ({r.created_at.strftime('%Y-%m-%d %H:%M')})": r.id for r in saved_runs}
-        selected_run = st.selectbox("Load Saved Run", options=["Current"] + list(run_options.keys()))
+        # Use simpler labels to avoid tooltip issues
+        run_labels = ["Current"] + [r.source_name for r in saved_runs]
+        run_map = {r.source_name: r for r in saved_runs}
         
-        if selected_run != "Current" and selected_run in run_options:
-            run_id = run_options[selected_run]
-            if st.session_state.current_run_id != run_id:
-                st.session_state.current_run_id = run_id
-                loaded_df = db.load_detections(run_id)
+        selected_label = st.selectbox("Load Saved Run", options=run_labels)
+        
+        if selected_label != "Current" and selected_label in run_map:
+            run = run_map[selected_label]
+            if st.session_state.current_run_id != run.id:
+                st.session_state.current_run_id = run.id
+                loaded_df = db.load_detections(run.id)
                 st.session_state.df = loaded_df
-                for run in saved_runs:
-                    if run.id == run_id:
-                        st.session_state.raw_json = run.raw_json
-                        st.session_state.source_name = run.source_name
-                        break
+                st.session_state.raw_json = run.raw_json
+                st.session_state.source_name = run.source_name
+                # Show timestamp info separately
+                st.caption(f"Saved: {run.created_at.strftime('%Y-%m-%d %H:%M')}")
     
     st.divider()
     
@@ -301,27 +303,26 @@ else:
             # Saved OCR runs
             saved_ocr_runs = db.list_ocr_runs()
             if saved_ocr_runs:
-                ocr_run_options = {
-                    f"{r.source_name} ({r.created_at.strftime('%Y-%m-%d %H:%M')})": r.id 
-                    for r in saved_ocr_runs
-                }
-                selected_ocr_run = st.selectbox(
+                # Use simpler labels to avoid tooltip issues
+                ocr_run_labels = ["Current"] + [r.source_name for r in saved_ocr_runs]
+                ocr_run_map = {r.source_name: r for r in saved_ocr_runs}
+                
+                selected_ocr_label = st.selectbox(
                     "Load Saved OCR Run", 
-                    options=["Current"] + list(ocr_run_options.keys()),
+                    options=ocr_run_labels,
                     key="ocr_run_select"
                 )
                 
-                if selected_ocr_run != "Current" and selected_ocr_run in ocr_run_options:
-                    ocr_run_id = ocr_run_options[selected_ocr_run]
-                    if st.session_state.current_ocr_run_id != ocr_run_id:
-                        st.session_state.current_ocr_run_id = ocr_run_id
-                        loaded_ocr_df = db.load_ocr_blocks(ocr_run_id)
+                if selected_ocr_label != "Current" and selected_ocr_label in ocr_run_map:
+                    ocr_run = ocr_run_map[selected_ocr_label]
+                    if st.session_state.current_ocr_run_id != ocr_run.id:
+                        st.session_state.current_ocr_run_id = ocr_run.id
+                        loaded_ocr_df = db.load_ocr_blocks(ocr_run.id)
                         st.session_state.ocr_df = loaded_ocr_df
-                        for ocr_run in saved_ocr_runs:
-                            if ocr_run.id == ocr_run_id:
-                                st.session_state.ocr_raw_json = ocr_run.raw_json
-                                st.session_state.ocr_source_name = ocr_run.source_name
-                                break
+                        st.session_state.ocr_raw_json = ocr_run.raw_json
+                        st.session_state.ocr_source_name = ocr_run.source_name
+                        # Show timestamp info separately
+                        st.caption(f"Saved: {ocr_run.created_at.strftime('%Y-%m-%d %H:%M')}")
         
         with col2:
             st.subheader("OCR Controls")
