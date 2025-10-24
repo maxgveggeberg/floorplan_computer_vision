@@ -1,0 +1,254 @@
+Build a Python app: “Floorplan CV Viewer”
+Goal
+
+Create a small Streamlit app (Python) that lets me:
+
+Upload a JSON file that contains object-detection output from a floor-plan CV model,
+
+Save that JSON and its parsed detections into a local SQLite database, and
+
+Visualize the detections (doors/windows/walls, etc.) as bounding boxes with filters and summary charts.
+
+A sample JSON with the exact field structure is provided; detections look like:
+{ "x": <float>, "y": <float>, "width": <float>, "height": <float>, "confidence": <float>, "class": "<str>", "class_id": <int>, "detection_id": "<uuid>" }
+
+Important assumption for visualization: treat x, y as the box center (typical YOLO-style). Compute corners as:
+x1 = x - width/2, y1 = y - height/2, x2 = x + width/2, y2 = y + height/2.
+Provide a UI toggle in the sidebar to switch to “top-left origin” interpretation (i.e., x,y are the top-left) in case a file uses that variant.
+
+Tech & Packages
+
+Python 3.11+
+
+Streamlit for UI
+
+SQLite (via sqlalchemy or sqlmodel; your choice) for persistence
+
+Pandas for tabular display
+
+Plotly for interactive visualization (box overlays and charts)
+
+Create requirements.txt with:
+
+streamlit
+pandas
+plotly
+sqlmodel
+sqlalchemy
+
+Files to create
+1) app.py
+
+Streamlit application with:
+
+Header + short description.
+
+Sidebar:
+
+File uploader for JSON (.json).
+
+Checkbox “x,y are top-left (not center)”.
+
+Confidence threshold slider (0.0–1.0, default 0.5).
+
+Multiselect filter for classes (derived from parsed data).
+
+Buttons:
+
+“Save to DB”
+
+“Clear current session”
+
+Main area (tabs):
+
+Visualizer: Plotly figure showing the detections as rectangles on a 2D canvas.
+
+Preserve aspect ratio.
+
+Use a fixed consistent color per class (e.g., door, window, wall).
+
+Optional label near each box: <class> (0.89) when “Show labels” checkbox is on.
+
+Invert y-axis or use image-style coordinates so increasing y goes down (common for CV outputs).
+
+Detections Table: Filtered detections as a dataframe with sorting, plus export buttons:
+
+Download CSV of the filtered rows.
+
+Summary:
+
+Bar chart: count by class.
+
+Histogram or KDE: confidence distribution.
+
+Basic stats: total detections, min/max/mean confidence, classes present.
+
+Sample loader: A small expander with a button “Load sample JSON” that loads the provided sample file from the repo (see “Sample data” below).
+
+Wire this app to the DB helper (db.py) and parser (cv_parser.py), and the Plotly drawing utilities (viz.py).
+
+2) cv_parser.py
+
+Functions to:
+
+load_json(raw_bytes_or_str) -> dict
+
+parse_detections(data: dict, assume_center: bool) -> pd.DataFrame
+
+Must read the predictions list with fields x,y,width,height,confidence,class,class_id,detection_id (per sample).
+
+Compute x1,y1,x2,y2 from either center or top-left interpretation.
+
+Add area = width*height.
+
+Validate required keys and gracefully skip malformed rows.
+
+infer_canvas_size(df) -> (w, h)
+
+Heuristic: set width/height to slightly larger than the max (x2,y2) you see in the detections (e.g., 5–10% padding), so the canvas accommodates everything even if the original image size is unknown.
+
+3) viz.py
+
+Plotly helpers:
+
+make_figure(canvas_w, canvas_h) -> go.Figure
+
+2D plane, origin top-left feel (flip y or set axes accordingly).
+
+add_boxes(fig, df_filtered, show_labels: bool)
+
+Draw rectangles for each detection; color by class.
+
+Optional text label near top-left of each box.
+
+Keep consistent colors via a fixed mapping dict.
+
+class_color_map(df) -> Dict[str, str]
+
+Deterministic mapping (e.g., door: blue, window: green, wall: gray).
+
+4) db.py
+
+SQLite via sqlmodel (or SQLAlchemy Core if you prefer). Schema:
+
+Run (a record for each uploaded JSON)
+
+id (PK, UUID or autoincrement int)
+
+created_at (UTC)
+
+source_name (file name or “sample”)
+
+raw_json (TEXT) — store original file content
+
+Detection
+
+id (PK, autoincrement)
+
+run_id (FK → Run.id)
+
+x, y, width, height (REAL)
+
+x1, y1, x2, y2 (REAL)
+
+confidence (REAL)
+
+class_name (TEXT)
+
+class_id (INTEGER)
+
+detection_uuid (TEXT)
+
+CRUD helpers:
+
+init_db(db_path="cv_viewer.db")
+
+create_run(source_name: str, raw_json: str) -> Run
+
+bulk_insert_detections(run_id, df: pd.DataFrame) -> int
+
+list_runs() -> List[Run]
+
+load_detections(run_id) -> pd.DataFrame
+
+5) sample/1_friendly_cv.json
+
+Add the provided sample JSON to sample/ and reference it in the “Load sample JSON” button. This sample’s predictions array includes items like class: "door"/"window"/"wall" with varying x,y,width,height,confidence (e.g., a “wall” with large width of ~1094 demonstrates the scale variance).
+
+6) requirements.txt
+
+(see above)
+
+UI Flow (Detailed)
+
+Upload JSON
+
+User uploads a .json file (or clicks “Load sample JSON”).
+
+App parses into a DataFrame (parse_detections), displays a preview table, and infers a canvas size.
+
+Visualize
+
+Show the Plotly canvas with rectangles.
+
+Sidebar filters: confidence threshold; class multiselect; checkbox “Show labels”; checkbox “x,y are top-left”.
+
+Re-render figure on any filter change.
+
+Save to DB
+
+On click, create a Run, save the raw JSON, and bulk insert parsed detections with FK to the run.
+
+Show a toast with number saved.
+
+Provide a selectbox “Choose saved run” to reload prior data from the DB.
+
+Explore
+
+“Detections Table” tab shows the filtered result with Download CSV.
+
+“Summary” tab shows a class count bar chart and confidence distribution.
+
+Edge Cases & Quality
+
+If the uploaded JSON doesn’t have predictions or required keys, show a clean error and do not crash.
+
+If class names contain unexpected values, still render them with a fallback color.
+
+If two boxes overlap heavily, ensure label text does not overflow (or allow toggling labels off).
+
+Keep figure axes clean: hide tick labels, lock aspect ratio to avoid distortion.
+
+Persist sidebar state using Streamlit session state.
+
+Testing / Acceptance
+
+Load the sample JSON and confirm:
+
+Detections render and are colored by class.
+
+Filters (confidence ≥ 0.8, only “wall”, etc.) immediately update both the figure and the table.
+
+“Save to DB” creates a run and rows in Detection.
+
+Switching to a saved run reloads and renders correctly.
+
+CSV export downloads the filtered view.
+
+Flip the “x,y are top-left” toggle and confirm boxes move accordingly (sanity check).
+
+Summary tab shows correct class counts and confidence stats.
+
+Nice-to-haves (if time permits)
+
+Add a mini legend (color ↔ class) above the figure.
+
+Add per-class visibility toggles (checkboxes).
+
+Add a “Download DB” button to download the cv_viewer.db file.
+
+Sample JSON reminder
+
+Use the attached/sample file to ensure parsing logic exactly matches the schema (keys shown above). The dataset includes multiple classes—e.g., “door”, “window”, “wall”—each with x,y,width,height,confidence,class,class_id,detection_id.
+
+Deliverables: a working Streamlit app (app.py) plus the helper modules (cv_parser.py, viz.py, db.py), requirements.txt, and sample/1_friendly_cv.json). Run with streamlit run app.py.

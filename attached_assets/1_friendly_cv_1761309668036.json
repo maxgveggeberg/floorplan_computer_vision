@@ -1,0 +1,644 @@
+{
+  "predictions": [
+    {
+      "x": 624.957,
+      "y": 503.962,
+      "width": 35.825,
+      "height": 28.657,
+      "confidence": 0.908,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "9ef6baa0-4b29-4cb7-8687-30de735ed0d9"
+    },
+    {
+      "x": 242.646,
+      "y": 425.811,
+      "width": 296.159,
+      "height": 9.346,
+      "confidence": 0.891,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "6bde933b-ab2a-4eb6-95fd-33887ff0c35c"
+    },
+    {
+      "x": 507.268,
+      "y": 504.016,
+      "width": 36.93,
+      "height": 29.824,
+      "confidence": 0.883,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "486879dc-319e-4ddd-ace4-542946c62866"
+    },
+    {
+      "x": 100.602,
+      "y": 226.151,
+      "width": 10.23,
+      "height": 411.358,
+      "confidence": 0.874,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "30d691a0-a0ce-45e9-b8c2-063910cb8c74"
+    },
+    {
+      "x": 1008.209,
+      "y": 748.194,
+      "width": 349.953,
+      "height": 9.178,
+      "confidence": 0.872,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "3458a944-31c8-445f-88a5-cc0483782871"
+    },
+    {
+      "x": 840.005,
+      "y": 26.668,
+      "width": 47.286,
+      "height": 9.587,
+      "confidence": 0.869,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "6c9e88ca-173f-4c64-9980-bdde520cfc1c"
+    },
+    {
+      "x": 336.028,
+      "y": 26.47,
+      "width": 56.089,
+      "height": 9.33,
+      "confidence": 0.861,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "5e6fbab7-2ce1-4069-b9f4-bcdc9b83998e"
+    },
+    {
+      "x": 887.83,
+      "y": 579.364,
+      "width": 104.564,
+      "height": 8.838,
+      "confidence": 0.859,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "ec0d7326-257d-4c12-ab49-02aa4b1c2785"
+    },
+    {
+      "x": 927.21,
+      "y": 74.388,
+      "width": 9.353,
+      "height": 105.822,
+      "confidence": 0.856,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "811f99e1-ed40-4ab9-a2d0-17c813a4cc3e"
+    },
+    {
+      "x": 387.682,
+      "y": 459.309,
+      "width": 8.771,
+      "height": 75.415,
+      "confidence": 0.853,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "be84ffb6-26c5-4862-aef6-737e3070e87b"
+    },
+    {
+      "x": 471.081,
+      "y": 26.478,
+      "width": 62.083,
+      "height": 9.888,
+      "confidence": 0.852,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "7127bcd3-384c-4486-8c65-b07fea3d88e0"
+    },
+    {
+      "x": 767.529,
+      "y": 101.974,
+      "width": 7.602,
+      "height": 160.565,
+      "confidence": 0.852,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "2256a9df-f745-4bb9-af8c-b0f98c43137c"
+    },
+    {
+      "x": 567.774,
+      "y": 514.908,
+      "width": 85.101,
+      "height": 9.04,
+      "confidence": 0.846,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "0fadb5cd-f3e0-4a97-971e-b4cf501c2fec"
+    },
+    {
+      "x": 1015.956,
+      "y": 493.378,
+      "width": 115.664,
+      "height": 7.584,
+      "confidence": 0.846,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "b5680ee4-c6a5-4a81-ba33-bcf855790d52"
+    },
+    {
+      "x": 850.934,
+      "y": 334.371,
+      "width": 67.755,
+      "height": 8.561,
+      "confidence": 0.846,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "49812924-34d7-4094-ae1b-f83803e9a4ec"
+    },
+    {
+      "x": 637.546,
+      "y": 25.821,
+      "width": 1094.043,
+      "height": 8.849,
+      "confidence": 0.843,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "1241702f-d047-41c2-804b-07cecb5dd23b"
+    },
+    {
+      "x": 828.668,
+      "y": 179.269,
+      "width": 42.332,
+      "height": 7.636,
+      "confidence": 0.843,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "369c9811-b7b7-4f19-adf2-754e3e7d452c"
+    },
+    {
+      "x": 1112.101,
+      "y": 749.122,
+      "width": 53.923,
+      "height": 9.575,
+      "confidence": 0.842,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "d30fa63b-4f3d-440a-a305-b5067e5d8531"
+    },
+    {
+      "x": 838.768,
+      "y": 621.498,
+      "width": 8.218,
+      "height": 264.385,
+      "confidence": 0.841,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "5f28ba89-9be6-4344-b803-1130a1a6afc9"
+    },
+    {
+      "x": 1062.436,
+      "y": 250.186,
+      "width": 242.58,
+      "height": 7.344,
+      "confidence": 0.839,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "302d4d6a-6057-47c8-a7b7-dc67bb4e4cb1"
+    },
+    {
+      "x": 880.866,
+      "y": 336.354,
+      "width": 8.67,
+      "height": 195.57,
+      "confidence": 0.838,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "a0c60093-bfc7-49a4-acd3-ce5def0e566b"
+    },
+    {
+      "x": 729.082,
+      "y": 493.389,
+      "width": 221.241,
+      "height": 8.748,
+      "confidence": 0.835,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "e7b2621d-db18-46fc-ac86-fdb6d90b59c3"
+    },
+    {
+      "x": 437.97,
+      "y": 492.949,
+      "width": 109.184,
+      "height": 8.46,
+      "confidence": 0.833,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "ed1840b2-362a-4a8e-92ec-a57d1fa5f32a"
+    },
+    {
+      "x": 1013.661,
+      "y": 26.731,
+      "width": 45.431,
+      "height": 8.893,
+      "confidence": 0.828,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "adb80f54-5466-4687-83e5-83afd035509e"
+    },
+    {
+      "x": 672.735,
+      "y": 243.012,
+      "width": 97.713,
+      "height": 7.597,
+      "confidence": 0.828,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "71e7bcfb-8050-4e73-b28c-68d44e36f0ea"
+    },
+    {
+      "x": 936.885,
+      "y": 664.061,
+      "width": 6.92,
+      "height": 176.9,
+      "confidence": 0.828,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "78695c54-4f07-4fa2-bbe3-a613cb94e4ce"
+    },
+    {
+      "x": 860.193,
+      "y": 150.249,
+      "width": 8.546,
+      "height": 63.427,
+      "confidence": 0.825,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "92d1d902-c2a4-42d7-84ca-c8c897b9d97d"
+    },
+    {
+      "x": 880.587,
+      "y": 536.214,
+      "width": 7.169,
+      "height": 93.413,
+      "confidence": 0.822,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "dfc82de8-b2cb-4d82-98c7-51fba95ad5e2"
+    },
+    {
+      "x": 1180.089,
+      "y": 207.681,
+      "width": 9.51,
+      "height": 43.245,
+      "confidence": 0.82,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "46e485cf-9679-4f2e-9a9a-9d74ac5a06ef"
+    },
+    {
+      "x": 583.433,
+      "y": 242.317,
+      "width": 395.79,
+      "height": 7.64,
+      "confidence": 0.816,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "d851b272-aab2-4bd8-a0b7-f5027e10fe49"
+    },
+    {
+      "x": 816.015,
+      "y": 178.391,
+      "width": 103.9,
+      "height": 7.588,
+      "confidence": 0.816,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "9bd19e30-20da-44bb-bd17-b9817157e442"
+    },
+    {
+      "x": 1179.823,
+      "y": 534.45,
+      "width": 9.829,
+      "height": 54.57,
+      "confidence": 0.815,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "4835f0ff-388f-4899-a7b4-6080b96507cb"
+    },
+    {
+      "x": 912.278,
+      "y": 493.773,
+      "width": 48.864,
+      "height": 8.076,
+      "confidence": 0.81,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "77e0a521-3d9a-4846-a795-52e8d8d15a61"
+    },
+    {
+      "x": 847.272,
+      "y": 242.498,
+      "width": 43.794,
+      "height": 7.834,
+      "confidence": 0.808,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "fd890033-80f1-4bb3-9ed8-4e0dbe2cb13b"
+    },
+    {
+      "x": 906.28,
+      "y": 749.252,
+      "width": 49.133,
+      "height": 10.079,
+      "confidence": 0.808,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "238824e4-c206-40a3-be8c-4094956a4614"
+    },
+    {
+      "x": 770.872,
+      "y": 493.931,
+      "width": 27.487,
+      "height": 9.902,
+      "confidence": 0.806,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "9b86f1d4-dd04-49c3-a1b3-d2cd4e9fba89"
+    },
+    {
+      "x": 101.346,
+      "y": 225.058,
+      "width": 10.742,
+      "height": 55.053,
+      "confidence": 0.801,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "7140bf95-919f-4539-8896-6d37133a1088"
+    },
+    {
+      "x": 389.358,
+      "y": 165.429,
+      "width": 8.323,
+      "height": 44.562,
+      "confidence": 0.798,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "eb30641d-0929-49c4-b5ab-a3b5af9f2d49"
+    },
+    {
+      "x": 944.577,
+      "y": 283.773,
+      "width": 7.643,
+      "height": 44.511,
+      "confidence": 0.794,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "42199114-1842-449a-9e67-ad79084b2dd0"
+    },
+    {
+      "x": 795.158,
+      "y": 278.909,
+      "width": 55.34,
+      "height": 9.438,
+      "confidence": 0.794,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "900d9354-2f3c-4046-a2a9-4785e4b7e508"
+    },
+    {
+      "x": 820.184,
+      "y": 336.839,
+      "width": 8.177,
+      "height": 196.55,
+      "confidence": 0.793,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "512af1bf-f894-420c-990b-e9270b0b1d3e"
+    },
+    {
+      "x": 772.018,
+      "y": 261.448,
+      "width": 9.108,
+      "height": 45.013,
+      "confidence": 0.79,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "ea14aa25-2752-4bd3-9b77-950514288e1b"
+    },
+    {
+      "x": 937.527,
+      "y": 715.542,
+      "width": 6.777,
+      "height": 45.541,
+      "confidence": 0.788,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "82310127-6fc0-4593-8415-f42abd621b2e"
+    },
+    {
+      "x": 1022.007,
+      "y": 492.805,
+      "width": 319.317,
+      "height": 7.195,
+      "confidence": 0.787,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "1f56348e-7fa2-4c52-8e28-322edc70ca96"
+    },
+    {
+      "x": 388.396,
+      "y": 219.187,
+      "width": 7.13,
+      "height": 393.633,
+      "confidence": 0.785,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "97db37de-8b69-4966-a7d4-d86105521880"
+    },
+    {
+      "x": 1063.145,
+      "y": 450.329,
+      "width": 242.044,
+      "height": 8.144,
+      "confidence": 0.777,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "5e3adb52-dfae-4aa3-a2f9-0e632d28557b"
+    },
+    {
+      "x": 671.117,
+      "y": 26.543,
+      "width": 110.533,
+      "height": 9.142,
+      "confidence": 0.774,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "a5362429-0f9b-4dac-ab63-02fd26eb3fbb"
+    },
+    {
+      "x": 850.541,
+      "y": 241.782,
+      "width": 65.641,
+      "height": 7.269,
+      "confidence": 0.763,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "43af24d0-0619-450a-9cca-cfaecc4869c7"
+    },
+    {
+      "x": 1094.814,
+      "y": 470.879,
+      "width": 8.3,
+      "height": 49.17,
+      "confidence": 0.758,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "efda6c15-a4b6-4af6-98b6-4f479fa51055"
+    },
+    {
+      "x": 967.067,
+      "y": 219.535,
+      "width": 6.979,
+      "height": 45.563,
+      "confidence": 0.751,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "d06c5944-9de9-4a9d-8833-112b6a333e07"
+    },
+    {
+      "x": 945.06,
+      "y": 373.712,
+      "width": 6.58,
+      "height": 247.376,
+      "confidence": 0.746,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "7ca522ea-0f85-488e-ac3d-73516abf9396"
+    },
+    {
+      "x": 1179.618,
+      "y": 374.811,
+      "width": 10.017,
+      "height": 49.064,
+      "confidence": 0.721,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "74a07496-149b-42a5-a52b-04d1030b3a7b"
+    },
+    {
+      "x": 1179.756,
+      "y": 325.961,
+      "width": 10.298,
+      "height": 44.239,
+      "confidence": 0.715,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "3c2c56e7-cead-48c3-8c0d-713229d24451"
+    },
+    {
+      "x": 1179.791,
+      "y": 386.433,
+      "width": 9.027,
+      "height": 733.893,
+      "confidence": 0.71,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "e07c96db-8c6f-41e2-97f9-48417b18b3c4"
+    },
+    {
+      "x": 507.878,
+      "y": 504.96,
+      "width": 33.639,
+      "height": 24.569,
+      "confidence": 0.708,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "226ce8b7-635c-4492-adcc-e3da00bb4ff8"
+    },
+    {
+      "x": 794.91,
+      "y": 242.678,
+      "width": 34.195,
+      "height": 7.529,
+      "confidence": 0.682,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "3f0d233e-23d1-432a-b7fa-284bb67ace3b"
+    },
+    {
+      "x": 966.191,
+      "y": 74.33,
+      "width": 8.028,
+      "height": 71.083,
+      "confidence": 0.675,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "8b120248-2c2f-4f9a-b3ee-78c92cc09cd4"
+    },
+    {
+      "x": 1133.259,
+      "y": 451.446,
+      "width": 63.52,
+      "height": 8.332,
+      "confidence": 0.668,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "e4258184-1656-43eb-9867-605cbed5c34f"
+    },
+    {
+      "x": 879.864,
+      "y": 533.37,
+      "width": 7.382,
+      "height": 46.284,
+      "confidence": 0.666,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "464bc24e-a08f-4199-ab86-beed7c7f44c6"
+    },
+    {
+      "x": 911.316,
+      "y": 122.828,
+      "width": 112.344,
+      "height": 9.065,
+      "confidence": 0.641,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "0db383eb-34e1-4403-bf24-075a95c084fc"
+    },
+    {
+      "x": 966.437,
+      "y": 138.306,
+      "width": 7.038,
+      "height": 228.042,
+      "confidence": 0.629,
+      "class": "wall",
+      "class_id": 1,
+      "detection_id": "7efbfcc9-b3b9-4bf4-b3a9-6e7a1fed5af5"
+    },
+    {
+      "x": 566.899,
+      "y": 515.466,
+      "width": 78.598,
+      "height": 9.529,
+      "confidence": 0.588,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "82b5f8f1-05fc-42ca-9552-c8144f54d23e"
+    },
+    {
+      "x": 625.811,
+      "y": 505.257,
+      "width": 31.509,
+      "height": 22.676,
+      "confidence": 0.538,
+      "class": "window",
+      "class_id": 2,
+      "detection_id": "1e8187d5-ec3c-4659-b00e-a0f89c16e724"
+    },
+    {
+      "x": 769.906,
+      "y": 211.395,
+      "width": 8.519,
+      "height": 48.434,
+      "confidence": 0.514,
+      "class": "door",
+      "class_id": 0,
+      "detection_id": "3d585be7-3849-4d47-ab79-ca75ee26e1f5"
+    }
+  ]
+}
