@@ -6,59 +6,78 @@ import pandas as pd
 from geometry_utils import add_detection_names
 
 
-class Run(SQLModel, table=True):
-    """Record for each uploaded JSON file."""
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    source_name: str
-    raw_json: str
+# Check if models are already defined in the registry
+# This prevents the "Table already defined" error during Streamlit hot reloading
+_models_defined = False
+
+if not _models_defined:
+    class Run(SQLModel, table=True):
+        """Record for each uploaded JSON file."""
+        __tablename__ = "run"
+        __table_args__ = {'extend_existing': True}
+        
+        id: Optional[int] = Field(default=None, primary_key=True)
+        created_at: datetime = Field(default_factory=datetime.utcnow)
+        source_name: str
+        raw_json: str
 
 
-class Detection(SQLModel, table=True):
-    """Individual detection record."""
-    id: Optional[int] = Field(default=None, primary_key=True)
-    run_id: int = Field(foreign_key="run.id")
-    x: float
-    y: float
-    width: float
-    height: float
-    x1: float
-    y1: float
-    x2: float
-    y2: float
-    confidence: float
-    class_name: str
-    class_id: int
-    detection_uuid: str
+    class Detection(SQLModel, table=True):
+        """Individual detection record."""
+        __tablename__ = "detection"
+        __table_args__ = {'extend_existing': True}
+        
+        id: Optional[int] = Field(default=None, primary_key=True)
+        run_id: int = Field(foreign_key="run.id")
+        x: float
+        y: float
+        width: float
+        height: float
+        x1: float
+        y1: float
+        x2: float
+        y2: float
+        confidence: float
+        class_name: str
+        class_id: int
+        detection_uuid: str
 
 
-class OCRRun(SQLModel, table=True):
-    """Record for each uploaded OCR JSON file."""
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    source_name: str
-    raw_json: str
-    pages: int = 1
+    class OCRRun(SQLModel, table=True):
+        """Record for each uploaded OCR JSON file."""
+        __tablename__ = "ocrrun"
+        __table_args__ = {'extend_existing': True}
+        
+        id: Optional[int] = Field(default=None, primary_key=True)
+        created_at: datetime = Field(default_factory=datetime.utcnow)
+        source_name: str
+        raw_json: str
+        pages: int = 1
 
 
-class OCRTextBlock(SQLModel, table=True):
-    """Individual OCR text block record."""
-    id: Optional[int] = Field(default=None, primary_key=True)
-    ocr_run_id: int = Field(foreign_key="ocrrun.id")
-    text: str
-    block_type: str
-    confidence: float
-    block_id: str
-    left_norm: float
-    top_norm: float
-    width_norm: float
-    height_norm: float
-    x1: float
-    y1: float
-    x2: float
-    y2: float
-    center_x: float
-    center_y: float
+    class OCRTextBlock(SQLModel, table=True):
+        """Individual OCR text block record."""
+        __tablename__ = "ocrtextblock"
+        __table_args__ = {'extend_existing': True}
+        
+        id: Optional[int] = Field(default=None, primary_key=True)
+        ocr_run_id: int = Field(foreign_key="ocrrun.id")
+        text: str
+        block_type: str
+        confidence: float
+        block_id: str
+        left_norm: float
+        top_norm: float
+        width_norm: float
+        height_norm: float
+        x1: float
+        y1: float
+        x2: float
+        y2: float
+        center_x: float
+        center_y: float
+    
+    _models_defined = True
 
 
 engine = None
@@ -72,8 +91,14 @@ def init_db(db_path: str = "cv_viewer.db"):
         db_path: Path to SQLite database file
     """
     global engine
-    engine = create_engine(f"sqlite:///{db_path}")
-    SQLModel.metadata.create_all(engine)
+    if engine is None:
+        engine = create_engine(f"sqlite:///{db_path}")
+        try:
+            SQLModel.metadata.create_all(engine)
+        except Exception as e:
+            # If tables already exist, that's fine
+            if "already exists" not in str(e):
+                raise
 
 
 def create_run(source_name: str, raw_json: str) -> Run:
