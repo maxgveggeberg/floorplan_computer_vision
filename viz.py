@@ -118,3 +118,58 @@ def add_boxes(fig: go.Figure, df_filtered: pd.DataFrame, show_labels: bool = Fal
                 font=dict(color='white', size=10),
                 opacity=0.8
             )
+
+
+def add_ocr_text(fig: go.Figure, ocr_df: pd.DataFrame, show_boxes: bool = False,
+                 min_confidence: float = 0.5, text_size: int = 8):
+    """
+    Add OCR text overlay to the figure.
+    
+    Args:
+        fig: Plotly Figure to add text to
+        ocr_df: DataFrame with OCR text blocks
+        show_boxes: Whether to show bounding boxes around text
+        min_confidence: Minimum confidence threshold for displaying text
+        text_size: Font size for text display
+    """
+    if ocr_df.empty:
+        return
+    
+    # Filter by confidence
+    df_filtered = ocr_df[ocr_df['confidence'] >= min_confidence]
+    
+    # Only show LINE blocks by default (not individual WORD blocks to avoid clutter)
+    df_lines = df_filtered[df_filtered['block_type'] == 'LINE']
+    
+    for _, row in df_lines.iterrows():
+        text = row['text']
+        x1, y1, x2, y2 = row['x1'], row['y1'], row['x2'], row['y2']
+        center_x = row['center_x']
+        center_y = row['center_y']
+        confidence = row['confidence']
+        
+        # Add text annotation
+        fig.add_annotation(
+            x=center_x,
+            y=center_y,
+            text=text,
+            showarrow=False,
+            xanchor='center',
+            yanchor='middle',
+            font=dict(color='#e74c3c', size=text_size, family='monospace'),
+            bgcolor='rgba(255, 255, 255, 0.8)',
+            bordercolor='#e74c3c',
+            borderwidth=1,
+            opacity=0.9
+        )
+        
+        # Optionally show bounding box
+        if show_boxes:
+            fig.add_shape(
+                type="rect",
+                x0=x1, y0=y1,
+                x1=x2, y1=y2,
+                line=dict(color='#e74c3c', width=1, dash='dot'),
+                fillcolor='rgba(231, 76, 60, 0.1)',
+                opacity=0.5
+            )
