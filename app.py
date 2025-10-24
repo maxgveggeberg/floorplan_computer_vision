@@ -33,6 +33,15 @@ if 'ocr_source_name' not in st.session_state:
     st.session_state.ocr_source_name = None
 if 'current_ocr_run_id' not in st.session_state:
     st.session_state.current_ocr_run_id = None
+# OCR control settings
+if 'show_ocr_boxes' not in st.session_state:
+    st.session_state.show_ocr_boxes = False
+if 'ocr_confidence_threshold' not in st.session_state:
+    st.session_state.ocr_confidence_threshold = 50.0
+if 'ocr_text_size' not in st.session_state:
+    st.session_state.ocr_text_size = 8
+if 'show_ocr_words' not in st.session_state:
+    st.session_state.show_ocr_words = False
 
 with st.sidebar:
     st.header("Controls")
@@ -157,7 +166,15 @@ else:
                 ocr_scaled = ocr_parser.scale_ocr_to_detections(
                     st.session_state.ocr_df, canvas_w, canvas_h
                 )
-                viz.add_ocr_text(fig, ocr_scaled, show_boxes=False, text_size=8)
+                # Filter OCR data based on settings
+                ocr_filtered = ocr_scaled[ocr_scaled['confidence'] >= st.session_state.ocr_confidence_threshold]
+                if not st.session_state.show_ocr_words:
+                    ocr_filtered = ocr_filtered[ocr_filtered['block_type'] == 'LINE']
+                
+                viz.add_ocr_text(fig, ocr_filtered, 
+                               show_boxes=st.session_state.show_ocr_boxes, 
+                               text_size=st.session_state.ocr_text_size,
+                               min_confidence=st.session_state.ocr_confidence_threshold/100)
             
             st.plotly_chart(fig, use_container_width=True)
             
@@ -309,17 +326,31 @@ else:
         with col2:
             st.subheader("OCR Controls")
             
-            show_ocr_boxes = st.checkbox("Show OCR Bounding Boxes", value=False)
-            ocr_confidence_threshold = st.slider(
+            st.session_state.show_ocr_boxes = st.checkbox(
+                "Show OCR Bounding Boxes", 
+                value=st.session_state.show_ocr_boxes,
+                key="ocr_boxes_check"
+            )
+            st.session_state.ocr_confidence_threshold = st.slider(
                 "OCR Confidence Threshold",
                 min_value=0.0,
                 max_value=100.0,
-                value=50.0,
+                value=st.session_state.ocr_confidence_threshold,
                 step=5.0,
                 key="ocr_confidence"
             )
-            text_size = st.slider("Text Size", min_value=6, max_value=20, value=8)
-            show_words = st.checkbox("Show Words (not just lines)", value=False)
+            st.session_state.ocr_text_size = st.slider(
+                "Text Size", 
+                min_value=6, 
+                max_value=20, 
+                value=st.session_state.ocr_text_size,
+                key="text_size_slider"
+            )
+            st.session_state.show_ocr_words = st.checkbox(
+                "Show Words (not just lines)", 
+                value=st.session_state.show_ocr_words,
+                key="show_words_check"
+            )
         
         # Parse OCR if available
         if st.session_state.ocr_raw_json:
@@ -341,8 +372,8 @@ else:
                     st.metric("Words", metadata.get('words', 0))
                 
                 # Filter OCR data
-                ocr_filtered = ocr_df[ocr_df['confidence'] >= ocr_confidence_threshold]
-                if not show_words:
+                ocr_filtered = ocr_df[ocr_df['confidence'] >= st.session_state.ocr_confidence_threshold]
+                if not st.session_state.show_ocr_words:
                     ocr_filtered = ocr_filtered[ocr_filtered['block_type'] == 'LINE']
                 
                 # Display OCR visualization
@@ -350,11 +381,11 @@ else:
                 st.subheader("OCR Text Overlay")
                 
                 fig_ocr = viz.make_figure(canvas_w, canvas_h)
-                viz.add_boxes(fig, df_filtered, show_labels=False)
+                viz.add_boxes(fig_ocr, df_filtered, show_labels=False)
                 viz.add_ocr_text(fig_ocr, ocr_filtered, 
-                               show_boxes=show_ocr_boxes, 
-                               text_size=text_size,
-                               min_confidence=ocr_confidence_threshold/100)
+                               show_boxes=st.session_state.show_ocr_boxes, 
+                               text_size=st.session_state.ocr_text_size,
+                               min_confidence=st.session_state.ocr_confidence_threshold/100)
                 
                 st.plotly_chart(fig_ocr, use_container_width=True)
                 
