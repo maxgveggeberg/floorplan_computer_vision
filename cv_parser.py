@@ -2,6 +2,8 @@ import json
 import pandas as pd
 from typing import Dict, Tuple
 
+from geometry_utils import add_detection_names
+
 
 def load_json(raw_bytes_or_str) -> dict:
     """
@@ -91,7 +93,8 @@ def parse_detections(data: dict, assume_center: bool = True) -> pd.DataFrame:
     if not rows:
         raise ValueError("No valid detections could be parsed from JSON")
     
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    return add_detection_names(df)
 
 
 def infer_canvas_size(df: pd.DataFrame) -> Tuple[float, float]:
