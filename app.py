@@ -45,6 +45,8 @@ if 'ocr_text_size' not in st.session_state:
     st.session_state.ocr_text_size = 8
 if 'show_ocr_words' not in st.session_state:
     st.session_state.show_ocr_words = False
+if 'show_ocr_overlay' not in st.session_state:
+    st.session_state.show_ocr_overlay = True
 
 with st.sidebar:
     st.header("Controls")
@@ -206,6 +208,44 @@ with st.sidebar:
         st.divider()
         show_labels = st.checkbox("Show Labels", value=True)
         
+        # OCR Display Controls in sidebar
+        st.divider()
+        st.subheader("OCR Overlay")
+        
+        # Check if OCR data is available
+        if st.session_state.ocr_df is not None and not st.session_state.ocr_df.empty:
+            st.session_state.show_ocr_overlay = st.checkbox(
+                "Show OCR Text", 
+                value=st.session_state.get('show_ocr_overlay', True),
+                key="main_show_ocr"
+            )
+            
+            if st.session_state.show_ocr_overlay:
+                st.session_state.ocr_text_size = st.slider(
+                    "OCR Text Size",
+                    min_value=6,
+                    max_value=20,
+                    value=st.session_state.get('ocr_text_size', 8),
+                    key="main_ocr_text_size"
+                )
+                
+                st.session_state.ocr_confidence_threshold = st.slider(
+                    "OCR Confidence",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=st.session_state.get('ocr_confidence_threshold', 50.0),
+                    step=5.0,
+                    key="main_ocr_confidence"
+                )
+                
+                st.session_state.show_ocr_boxes = st.checkbox(
+                    "Show OCR Boxes",
+                    value=st.session_state.get('show_ocr_boxes', False),
+                    key="main_ocr_boxes"
+                )
+        else:
+            st.info("Upload OCR file in OCR tab to see text overlay")
+        
         st.divider()
         
         if st.button("Save to DB", type="primary"):
@@ -331,15 +371,18 @@ else:
                             opacity=0.8
                         )
 
-            # Add OCR overlay if available
-            if st.session_state.ocr_df is not None and not st.session_state.ocr_df.empty:
+            # Add OCR overlay if available and enabled
+            if (st.session_state.ocr_df is not None and 
+                not st.session_state.ocr_df.empty and 
+                st.session_state.get('show_ocr_overlay', True)):
+                
                 ocr_scaled = ocr_parser.scale_ocr_to_detections(
                     st.session_state.ocr_df, canvas_w, canvas_h
                 )
                 # Filter OCR data based on settings
                 ocr_filtered = ocr_scaled[ocr_scaled['confidence'] >= st.session_state.ocr_confidence_threshold]
-                if not st.session_state.show_ocr_words:
-                    ocr_filtered = ocr_filtered[ocr_filtered['block_type'] == 'LINE']
+                # Always show only LINE blocks in main view (not individual words)
+                ocr_filtered = ocr_filtered[ocr_filtered['block_type'] == 'LINE']
                 
                 viz.add_ocr_text(fig, ocr_filtered, 
                                show_boxes=st.session_state.show_ocr_boxes, 
