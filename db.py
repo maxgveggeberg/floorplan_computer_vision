@@ -165,7 +165,10 @@ def bulk_insert_detections(run_id: int, df: pd.DataFrame) -> int:
 
 
 def replace_run_detections(run_id: int, df: pd.DataFrame) -> int:
-    """Replace detections for a run with freshly parsed results.
+    """Replace ONLY the detections for a run with freshly parsed results.
+    
+    IMPORTANT: This function only updates detection records, it does NOT delete
+    the Run record itself. The saved JSON file remains intact in the database.
 
     Args:
         run_id: Identifier of the run whose detections should be replaced.
@@ -176,11 +179,20 @@ def replace_run_detections(run_id: int, df: pd.DataFrame) -> int:
     """
     if engine is None:
         init_db()
-
+    
+    # First verify the run exists
+    with Session(engine) as session:
+        run = session.get(Run, run_id)
+        if not run:
+            raise ValueError(f"Run with ID {run_id} not found - cannot update detections")
+    
+    # Only delete Detection records for this specific run_id
+    # The Run record itself is NEVER deleted
     with Session(engine) as session:
         delete_stmt = delete(Detection).where(Detection.run_id == run_id)
-        session.exec(delete_stmt)
+        result = session.exec(delete_stmt)
         session.commit()
+        print(f"Recalculating run {run_id}: Updated detection records")
 
     return bulk_insert_detections(run_id, df)
 

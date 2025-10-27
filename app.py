@@ -65,7 +65,15 @@ with st.sidebar:
     # Recalculate button - moved here to be below Load Sample button
     saved_runs_for_recalc = db.list_runs()
     if saved_runs_for_recalc:
-        if st.button("Recalculate", help="Reprocess all saved runs using the latest parsing logic"):
+        if st.button(
+            "🔄 Recalculate Detections", 
+            help="Updates detection coordinates for all saved runs. Your saved JSON files remain safe - only the parsed bounding boxes are recalculated."
+        ):
+            # Show what will happen
+            with st.info("ℹ️ Recalculating detection coordinates..."):
+                st.caption(f"This will update {len(saved_runs_for_recalc)} saved run(s).")
+                st.caption("✅ Your saved JSON files are NOT deleted - only the detection coordinates are updated.")
+            
             # Get current checkbox value or use default
             try:
                 # Try to get the current checkbox value if it exists in session state
@@ -94,8 +102,8 @@ with st.sidebar:
 
                 if processed_runs:
                     st.success(
-                        f"Reprocessed {processed_runs} run{'s' if processed_runs != 1 else ''} "
-                        f"and updated {updated_detections} detections."
+                        f"✅ Successfully reprocessed {processed_runs} run{'s' if processed_runs != 1 else ''} "
+                        f"and updated {updated_detections} detections. All JSON files remain saved."
                     )
                 else:
                     st.info("No saved runs available for recalculation.")
