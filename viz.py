@@ -61,22 +61,15 @@ def make_figure(canvas_w: float, canvas_h: float) -> go.Figure:
         showticklabels=False,
         showgrid=False,
         zeroline=False,
-        # Removed scaleanchor and scaleratio to allow free-form zoom
-        # scaleanchor="x",  # This was forcing fixed proportions
-        # scaleratio=1,     # This was maintaining 1:1 aspect ratio
+        scaleanchor="x",
+        scaleratio=1,
         title=None
     )
-    
-    # Calculate figure dimensions to maintain canvas aspect ratio
-    aspect_ratio = canvas_w / canvas_h
-    fig_height = 600
-    fig_width = fig_height * aspect_ratio
     
     fig.update_layout(
         plot_bgcolor='white',
         margin=dict(l=10, r=10, t=10, b=10),
-        height=fig_height,
-        width=fig_width,
+        height=600,
         hovermode='closest'
     )
     
