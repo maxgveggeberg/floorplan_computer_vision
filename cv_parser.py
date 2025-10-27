@@ -2,7 +2,29 @@ import json
 from typing import Tuple
 
 import pandas as pd
-from shapely.geometry import LineString
+
+try:  # pragma: no cover - dependency availability varies in runtime
+    from shapely.geometry import LineString as _ShapelyLineString
+except ModuleNotFoundError:  # Shapely might not be available in deployment environment
+    _ShapelyLineString = None
+
+
+def _build_linestring(points: list[Tuple[float, float]]):
+    """Return a representation of a line segment.
+
+    Shapely is preferred when available, but the visualisation code only
+    requires the coordinate pairs. When Shapely cannot be imported we fall
+    back to a lightweight GeoJSON-style dictionary so downstream code keeps
+    working without the optional dependency.
+    """
+
+    if _ShapelyLineString is not None:
+        return _ShapelyLineString(points)
+
+    return {
+        'type': 'LineString',
+        'coordinates': [tuple(pt) for pt in points],
+    }
 
 from geometry_utils import add_detection_names, add_wall_direction
 
@@ -135,7 +157,7 @@ def parse_detections(data: dict, assume_center: bool = True) -> pd.DataFrame:
             line_start_y.append(start_point[1])
             line_end_x.append(end_point[0])
             line_end_y.append(end_point[1])
-            line_geometries.append(LineString([start_point, end_point]))
+            line_geometries.append(_build_linestring([start_point, end_point]))
         else:
             line_start_x.append(None)
             line_start_y.append(None)
