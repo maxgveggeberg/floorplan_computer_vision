@@ -236,7 +236,50 @@ else:
                 df_visible = df_filtered
 
             fig = viz.make_figure(canvas_w, canvas_h)
-            viz.add_boxes(fig, df_visible, show_labels=show_labels)
+
+            color_map = viz.class_color_map(df_visible)
+
+            non_wall_df = df_visible[df_visible['class_name'].str.lower() != 'wall']
+            if not non_wall_df.empty:
+                viz.add_boxes(fig, non_wall_df, show_labels=show_labels)
+
+            wall_df = df_visible[df_visible['class_name'].str.lower() == 'wall']
+            wall_color = color_map.get('wall', '#95a5a6')
+            if not wall_df.empty:
+                for _, wall in wall_df.iterrows():
+                    start_x = wall.get('wall_line_start_x')
+                    start_y = wall.get('wall_line_start_y')
+                    end_x = wall.get('wall_line_end_x')
+                    end_y = wall.get('wall_line_end_y')
+
+                    if None in (start_x, start_y, end_x, end_y):
+                        continue
+
+                    detection_name = wall.get('detection_name', 'wall')
+                    confidence = wall.get('confidence', 0.0)
+
+                    fig.add_trace(go.Scatter(
+                        x=[start_x, end_x],
+                        y=[start_y, end_y],
+                        mode='lines',
+                        line=dict(color=wall_color, width=6),
+                        hoverinfo='text',
+                        hovertext=f"{detection_name} ({confidence:.2f})",
+                        showlegend=False
+                    ))
+
+                    if show_labels:
+                        fig.add_annotation(
+                            x=wall.get('x'),
+                            y=wall.get('y'),
+                            text=f"{detection_name} ({confidence:.2f})",
+                            showarrow=False,
+                            xanchor='center',
+                            yanchor='middle',
+                            bgcolor=wall_color,
+                            font=dict(color='white', size=10),
+                            opacity=0.8
+                        )
 
             # Add OCR overlay if available
             if st.session_state.ocr_df is not None and not st.session_state.ocr_df.empty:
@@ -284,7 +327,9 @@ else:
         else:
             columns = [
                 'detection_name', 'class_name', 'confidence', 'x', 'y', 'width', 'height',
-                'wall_direction', 'x1', 'y1', 'x2', 'y2', 'detection_uuid'
+                'wall_direction', 'wall_line_start_x', 'wall_line_start_y',
+                'wall_line_end_x', 'wall_line_end_y', 'x1', 'y1', 'x2', 'y2',
+                'wall_linestring', 'detection_uuid'
             ]
 
             available_columns = [col for col in columns if col in df_filtered.columns]
