@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, create_engine, Session, select
+from sqlmodel import SQLModel, Field, create_engine, Session, select, delete
 from typing import Optional, List
 from datetime import datetime
 import pandas as pd
@@ -162,6 +162,27 @@ def bulk_insert_detections(run_id: int, df: pd.DataFrame) -> int:
         session.commit()
     
     return len(detections)
+
+
+def replace_run_detections(run_id: int, df: pd.DataFrame) -> int:
+    """Replace detections for a run with freshly parsed results.
+
+    Args:
+        run_id: Identifier of the run whose detections should be replaced.
+        df: DataFrame containing the new detections.
+
+    Returns:
+        Number of detections inserted for the run.
+    """
+    if engine is None:
+        init_db()
+
+    with Session(engine) as session:
+        delete_stmt = delete(Detection).where(Detection.run_id == run_id)
+        session.exec(delete_stmt)
+        session.commit()
+
+    return bulk_insert_detections(run_id, df)
 
 
 def list_runs() -> List[Run]:
