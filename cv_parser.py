@@ -1,6 +1,8 @@
 import json
-import pandas as pd
 from typing import Tuple
+
+import pandas as pd
+from shapely.geometry import LineString
 
 from geometry_utils import add_detection_names, add_wall_direction
 
