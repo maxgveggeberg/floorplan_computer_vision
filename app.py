@@ -489,9 +489,45 @@ else:
             ocr_file = st.file_uploader("Upload AWS Textract JSON", type=['json'], key="ocr_uploader")
             
             if ocr_file is not None:
-                st.session_state.ocr_raw_json = ocr_file.read().decode('utf-8')
-                st.session_state.ocr_source_name = ocr_file.name
-                st.session_state.current_ocr_run_id = None
+                raw_json_content = ocr_file.read().decode('utf-8')
+                
+                # Only process if this is a new file or different from what's in session
+                if (st.session_state.ocr_raw_json != raw_json_content or 
+                    st.session_state.ocr_source_name != ocr_file.name):
+                    
+                    st.session_state.ocr_raw_json = raw_json_content
+                    st.session_state.ocr_source_name = ocr_file.name
+                    st.session_state.current_ocr_run_id = None
+                    
+                    # Automatically save to database
+                    try:
+                        # Parse the OCR data first
+                        ocr_data = ocr_parser.load_textract_json(raw_json_content)
+                        metadata = ocr_parser.get_document_metadata(ocr_data)
+                        
+                        # Check if floor plan data exists to get canvas dimensions
+                        if not df_filtered.empty:
+                            canvas_w, canvas_h = cv_parser.infer_canvas_size(df_filtered)
+                        else:
+                            # Use default canvas size if no floor plan loaded
+                            canvas_w, canvas_h = 1200, 900
+                        
+                        ocr_df = ocr_parser.parse_text_blocks(ocr_data, canvas_w, canvas_h)
+                        st.session_state.ocr_df = ocr_df
+                        
+                        # Save to database automatically
+                        ocr_run = db.create_ocr_run(
+                            source_name=ocr_file.name,
+                            raw_json=raw_json_content,
+                            pages=metadata.get('pages', 1)
+                        )
+                        num_saved = db.bulk_insert_ocr_blocks(ocr_run.id, ocr_df)
+                        st.session_state.current_ocr_run_id = ocr_run.id
+                        st.success(f"✅ Automatically saved '{ocr_file.name}' with {num_saved} text blocks to database!")
+                        
+                    except Exception as e:
+                        st.error(f"Error processing/saving OCR file: {str(e)}")
+                        st.session_state.ocr_df = None
             
             # Saved OCR runs
             saved_ocr_runs = db.list_ocr_runs()
@@ -592,19 +628,23 @@ else:
                 display_ocr = display_ocr.sort_values('confidence', ascending=False)
                 st.dataframe(display_ocr, use_container_width=True, hide_index=True)
                 
-                # Save OCR to DB
-                if st.button("Save OCR to DB", type="primary", key="save_ocr"):
-                    try:
-                        ocr_run = db.create_ocr_run(
-                            source_name=st.session_state.ocr_source_name or "unknown_ocr",
-                            raw_json=st.session_state.ocr_raw_json,
-                            pages=metadata.get('pages', 1)
-                        )
-                        num_saved = db.bulk_insert_ocr_blocks(ocr_run.id, st.session_state.ocr_df)
-                        st.success(f"Saved {num_saved} OCR text blocks to database!")
-                        st.session_state.current_ocr_run_id = ocr_run.id
-                    except Exception as e:
-                        st.error(f"Error saving OCR to database: {str(e)}")
+                # Show save status or re-save option
+                if st.session_state.current_ocr_run_id:
+                    st.info(f"✅ This OCR data is already saved in the database")
+                else:
+                    # Manual save button (for sample or if auto-save failed)
+                    if st.button("Save OCR to DB", type="primary", key="save_ocr"):
+                        try:
+                            ocr_run = db.create_ocr_run(
+                                source_name=st.session_state.ocr_source_name or "unknown_ocr",
+                                raw_json=st.session_state.ocr_raw_json,
+                                pages=metadata.get('pages', 1)
+                            )
+                            num_saved = db.bulk_insert_ocr_blocks(ocr_run.id, st.session_state.ocr_df)
+                            st.success(f"Saved {num_saved} OCR text blocks to database!")
+                            st.session_state.current_ocr_run_id = ocr_run.id
+                        except Exception as e:
+                            st.error(f"Error saving OCR to database: {str(e)}")
                 
                 # Clear OCR session
                 if st.button("Clear OCR Session", key="clear_ocr"):
