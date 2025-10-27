@@ -62,6 +62,48 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Error loading sample: {str(e)}")
     
+    # Recalculate button - moved here to be below Load Sample button
+    saved_runs_for_recalc = db.list_runs()
+    if saved_runs_for_recalc:
+        if st.button("Recalculate", help="Reprocess all saved runs using the latest parsing logic"):
+            # Get current checkbox value or use default
+            try:
+                # Try to get the current checkbox value if it exists in session state
+                assume_center_value = not st.session_state.get('topleft_checkbox', False)
+            except:
+                assume_center_value = True  # Default to center coordinates
+                
+            with st.spinner("Recalculating saved runs..."):
+                processed_runs = 0
+                updated_detections = 0
+                errors = []
+
+                for run in saved_runs_for_recalc:
+                    try:
+                        data = cv_parser.load_json(run.raw_json)
+                        df = cv_parser.parse_detections(data, assume_center=assume_center_value)
+                        inserted = db.replace_run_detections(run.id, df)
+                        processed_runs += 1
+                        updated_detections += inserted
+
+                        if st.session_state.get('current_run_id') == run.id:
+                            st.session_state.df = df
+                            st.session_state.wall_visibility = {}
+                    except Exception as exc:
+                        errors.append(f"{run.source_name}: {exc}")
+
+                if processed_runs:
+                    st.success(
+                        f"Reprocessed {processed_runs} run{'s' if processed_runs != 1 else ''} "
+                        f"and updated {updated_detections} detections."
+                    )
+                else:
+                    st.info("No saved runs available for recalculation.")
+
+                if errors:
+                    formatted_errors = "\n".join(errors)
+                    st.warning("Some runs could not be processed:\n" + formatted_errors)
+    
     uploaded_file = st.file_uploader("Upload JSON", type=['json'])
     
     if uploaded_file is not None:
@@ -92,39 +134,6 @@ with st.sidebar:
     st.divider()
 
     assume_center = not st.checkbox("x,y are top-left (not center)", value=False)
-
-    if saved_runs:
-        if st.button("Recalculate", help="Reprocess all saved runs using the latest parsing logic"):
-            with st.spinner("Recalculating saved runs..."):
-                processed_runs = 0
-                updated_detections = 0
-                errors = []
-
-                for run in saved_runs:
-                    try:
-                        data = cv_parser.load_json(run.raw_json)
-                        df = cv_parser.parse_detections(data, assume_center=assume_center)
-                        inserted = db.replace_run_detections(run.id, df)
-                        processed_runs += 1
-                        updated_detections += inserted
-
-                        if st.session_state.get('current_run_id') == run.id:
-                            st.session_state.df = df
-                            st.session_state.wall_visibility = {}
-                    except Exception as exc:
-                        errors.append(f"{run.source_name}: {exc}")
-
-                if processed_runs:
-                    st.success(
-                        f"Reprocessed {processed_runs} run{'s' if processed_runs != 1 else ''} "
-                        f"and updated {updated_detections} detections."
-                    )
-                else:
-                    st.info("No saved runs available for recalculation.")
-
-                if errors:
-                    formatted_errors = "\n".join(errors)
-                    st.warning("Some runs could not be processed:\n" + formatted_errors)
 
     if st.session_state.raw_json:
         try:
