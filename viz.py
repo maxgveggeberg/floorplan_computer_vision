@@ -67,10 +67,16 @@ def make_figure(canvas_w: float, canvas_h: float) -> go.Figure:
         title=None
     )
     
+    # Calculate figure dimensions to maintain canvas aspect ratio
+    aspect_ratio = canvas_w / canvas_h
+    fig_height = 600
+    fig_width = fig_height * aspect_ratio
+    
     fig.update_layout(
         plot_bgcolor='white',
         margin=dict(l=10, r=10, t=10, b=10),
-        height=600,
+        height=fig_height,
+        width=fig_width,
         hovermode='closest'
     )
     
