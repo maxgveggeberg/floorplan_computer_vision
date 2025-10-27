@@ -1,6 +1,8 @@
 import json
 import pandas as pd
-from typing import Dict, Tuple
+from typing import Tuple
+
+from shapely.geometry import LineString
 
 from geometry_utils import add_detection_names, add_wall_direction
 
@@ -95,7 +97,59 @@ def parse_detections(data: dict, assume_center: bool = True) -> pd.DataFrame:
     
     df = pd.DataFrame(rows)
     df = add_detection_names(df)
-    return add_wall_direction(df)
+    df = add_wall_direction(df)
+
+    line_start_x = []
+    line_start_y = []
+    line_end_x = []
+    line_end_y = []
+    line_geometries = []
+
+    for row in df.itertuples(index=False):
+        if str(row.class_name).lower() != 'wall':
+            line_start_x.append(None)
+            line_start_y.append(None)
+            line_end_x.append(None)
+            line_end_y.append(None)
+            line_geometries.append(None)
+            continue
+
+        direction = getattr(row, 'wall_direction', '')
+        center_x = row.x
+        center_y = row.y
+
+        start_point: Tuple[float, float] | None = None
+        end_point: Tuple[float, float] | None = None
+
+        if direction == 'vertical':
+            half_height = row.height / 2
+            start_point = (center_x, center_y + half_height)
+            end_point = (center_x, center_y - half_height)
+        elif direction == 'horizontal':
+            half_width = row.width / 2
+            start_point = (center_x - half_width, center_y)
+            end_point = (center_x + half_width, center_y)
+
+        if start_point and end_point:
+            line_start_x.append(start_point[0])
+            line_start_y.append(start_point[1])
+            line_end_x.append(end_point[0])
+            line_end_y.append(end_point[1])
+            line_geometries.append(LineString([start_point, end_point]))
+        else:
+            line_start_x.append(None)
+            line_start_y.append(None)
+            line_end_x.append(None)
+            line_end_y.append(None)
+            line_geometries.append(None)
+
+    df['wall_line_start_x'] = line_start_x
+    df['wall_line_start_y'] = line_start_y
+    df['wall_line_end_x'] = line_end_x
+    df['wall_line_end_y'] = line_end_y
+    df['wall_linestring'] = line_geometries
+
+    return df
 
 
 def infer_canvas_size(df: pd.DataFrame) -> Tuple[float, float]:
