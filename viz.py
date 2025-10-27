@@ -61,8 +61,9 @@ def make_figure(canvas_w: float, canvas_h: float) -> go.Figure:
         showticklabels=False,
         showgrid=False,
         zeroline=False,
-        scaleanchor="x",
-        scaleratio=1,
+        # Removed scaleanchor and scaleratio to allow free-form zoom
+        # scaleanchor="x",  # This was forcing fixed proportions
+        # scaleratio=1,     # This was maintaining 1:1 aspect ratio
         title=None
     )
     

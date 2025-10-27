@@ -378,7 +378,7 @@ else:
             columns = [
                 'detection_name', 'class_name', 'confidence', 'x', 'y', 'width', 'height',
                 'wall_direction', 'wall_line_start_x', 'wall_line_start_y',
-                'wall_line_end_x', 'wall_line_end_y', 'x1', 'y1', 'x2', 'y2',
+                'wall_line_end_x', 'wall_line_end_y',
                 'wall_linestring', 'detection_uuid'
             ]
 
