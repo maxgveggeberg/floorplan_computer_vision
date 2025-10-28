@@ -1,11 +1,36 @@
 import json
 import pandas as pd
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 
-def load_textract_json(raw_bytes_or_str) -> dict:
+def detect_ocr_format(data: dict) -> str:
     """
-    Load AWS Textract JSON from bytes or string.
+    Auto-detect whether the JSON is from AWS Textract or Google Cloud Vision.
+    
+    Args:
+        data: Parsed JSON dictionary
+        
+    Returns:
+        'textract' for AWS Textract, 'google_vision' for Google Cloud Vision
+    """
+    # Check for AWS Textract format
+    if 'Blocks' in data and isinstance(data.get('Blocks'), list):
+        # Additional check for Textract-specific fields
+        if data['Blocks'] and 'BlockType' in data['Blocks'][0]:
+            return 'textract'
+    
+    # Check for Google Cloud Vision format
+    if 'fullTextAnnotation' in data:
+        if 'pages' in data['fullTextAnnotation']:
+            return 'google_vision'
+    
+    # Default to textract for backward compatibility
+    return 'textract'
+
+
+def load_ocr_json(raw_bytes_or_str) -> dict:
+    """
+    Load OCR JSON from bytes or string (supports both AWS Textract and Google Cloud Vision).
     
     Args:
         raw_bytes_or_str: Either bytes from file upload or string
@@ -21,7 +46,192 @@ def load_textract_json(raw_bytes_or_str) -> dict:
         return raw_bytes_or_str
 
 
-def parse_text_blocks(data: dict, canvas_width: float = 1200, canvas_height: float = 900) -> pd.DataFrame:
+# Keep the old function name for backward compatibility
+def load_textract_json(raw_bytes_or_str) -> dict:
+    """
+    Load AWS Textract JSON from bytes or string.
+    (Deprecated: Use load_ocr_json instead)
+    
+    Args:
+        raw_bytes_or_str: Either bytes from file upload or string
+        
+    Returns:
+        Parsed JSON as dictionary
+    """
+    return load_ocr_json(raw_bytes_or_str)
+
+
+def parse_google_vision_blocks(data: dict, canvas_width: float = 1200, canvas_height: float = 900) -> pd.DataFrame:
+    """
+    Parse text blocks from Google Cloud Vision JSON into a pandas DataFrame.
+    
+    Args:
+        data: Dictionary from Google Cloud Vision with 'fullTextAnnotation' key
+        canvas_width: Width of the canvas to scale coordinates
+        canvas_height: Height of the canvas to scale coordinates
+    
+    Returns:
+        DataFrame with parsed text blocks including scaled coordinates
+    """
+    if 'fullTextAnnotation' not in data:
+        raise ValueError("JSON must contain 'fullTextAnnotation' key")
+    
+    full_text = data['fullTextAnnotation']
+    if 'pages' not in full_text or not full_text['pages']:
+        raise ValueError("No pages found in fullTextAnnotation")
+    
+    # Get image dimensions for normalization
+    image_width = data.get('width', 1024)  # Default to common dimensions if not found
+    image_height = data.get('height', 768)
+    
+    rows = []
+    
+    # Process each page (usually just one for single images)
+    for page in full_text['pages']:
+        if 'blocks' not in page:
+            continue
+            
+        for block in page.get('blocks', []):
+            # Skip non-text blocks
+            if block.get('blockType') != 'TEXT':
+                continue
+            
+            block_confidence = block.get('confidence', 0)
+            
+            # Process paragraphs within blocks
+            for paragraph in block.get('paragraphs', []):
+                para_confidence = paragraph.get('confidence', block_confidence)
+                
+                # Process words within paragraphs
+                for word in paragraph.get('words', []):
+                    try:
+                        # Get word confidence
+                        word_confidence = word.get('confidence', para_confidence)
+                        
+                        # Aggregate text from symbols
+                        word_text = ''
+                        for symbol in word.get('symbols', []):
+                            word_text += symbol.get('text', '')
+                        
+                        if not word_text:
+                            continue
+                        
+                        # Get bounding box vertices
+                        if 'boundingBox' not in word or 'vertices' not in word['boundingBox']:
+                            continue
+                        
+                        vertices = word['boundingBox']['vertices']
+                        if len(vertices) < 4:
+                            continue
+                        
+                        # Extract coordinates (absolute pixels)
+                        x_coords = [v.get('x', 0) for v in vertices]
+                        y_coords = [v.get('y', 0) for v in vertices]
+                        
+                        # Get bounding box extents
+                        x_min = min(x_coords)
+                        x_max = max(x_coords)
+                        y_min = min(y_coords)
+                        y_max = max(y_coords)
+                        
+                        # Normalize coordinates (0-1)
+                        left_norm = x_min / image_width
+                        top_norm = y_min / image_height
+                        width_norm = (x_max - x_min) / image_width
+                        height_norm = (y_max - y_min) / image_height
+                        
+                        # Scale to canvas coordinates
+                        x1 = left_norm * canvas_width
+                        y1 = top_norm * canvas_height
+                        x2 = (left_norm + width_norm) * canvas_width
+                        y2 = (top_norm + height_norm) * canvas_height
+                        
+                        # Center coordinates
+                        center_x = (x1 + x2) / 2
+                        center_y = (y1 + y2) / 2
+                        
+                        rows.append({
+                            'text': word_text,
+                            'block_type': 'WORD',  # Use consistent naming with Textract
+                            'confidence': word_confidence * 100,  # Convert to percentage
+                            'block_id': '',  # Google Vision doesn't provide IDs
+                            'left_norm': left_norm,
+                            'top_norm': top_norm,
+                            'width_norm': width_norm,
+                            'height_norm': height_norm,
+                            'x1': x1,
+                            'y1': y1,
+                            'x2': x2,
+                            'y2': y2,
+                            'center_x': center_x,
+                            'center_y': center_y,
+                            'width': x2 - x1,
+                            'height': y2 - y1
+                        })
+                        
+                    except (KeyError, ValueError, TypeError) as e:
+                        print(f"Error processing word: {e}")
+                        continue
+                
+                # Also add paragraph-level text if desired
+                # This aggregates all words in the paragraph
+                if paragraph.get('words'):
+                    try:
+                        para_text = ' '.join([
+                            ''.join([s.get('text', '') for s in w.get('symbols', [])])
+                            for w in paragraph['words']
+                        ])
+                        
+                        if para_text and 'boundingBox' in paragraph and 'vertices' in paragraph['boundingBox']:
+                            vertices = paragraph['boundingBox']['vertices']
+                            if len(vertices) >= 4:
+                                x_coords = [v.get('x', 0) for v in vertices]
+                                y_coords = [v.get('y', 0) for v in vertices]
+                                
+                                x_min = min(x_coords)
+                                x_max = max(x_coords)
+                                y_min = min(y_coords)
+                                y_max = max(y_coords)
+                                
+                                left_norm = x_min / image_width
+                                top_norm = y_min / image_height
+                                width_norm = (x_max - x_min) / image_width
+                                height_norm = (y_max - y_min) / image_height
+                                
+                                x1 = left_norm * canvas_width
+                                y1 = top_norm * canvas_height
+                                x2 = (left_norm + width_norm) * canvas_width
+                                y2 = (top_norm + height_norm) * canvas_height
+                                
+                                rows.append({
+                                    'text': para_text,
+                                    'block_type': 'LINE',  # Use LINE for paragraphs to match Textract
+                                    'confidence': para_confidence * 100,
+                                    'block_id': '',
+                                    'left_norm': left_norm,
+                                    'top_norm': top_norm,
+                                    'width_norm': width_norm,
+                                    'height_norm': height_norm,
+                                    'x1': x1,
+                                    'y1': y1,
+                                    'x2': x2,
+                                    'y2': y2,
+                                    'center_x': (x1 + x2) / 2,
+                                    'center_y': (y1 + y2) / 2,
+                                    'width': x2 - x1,
+                                    'height': y2 - y1
+                                })
+                    except (KeyError, ValueError, TypeError) as e:
+                        print(f"Error processing paragraph: {e}")
+                        continue
+    
+    if not rows:
+        raise ValueError("No valid text blocks could be parsed from Google Vision JSON")
+    
+    return pd.DataFrame(rows)
+
+
+def parse_textract_blocks(data: dict, canvas_width: float = 1200, canvas_height: float = 900) -> pd.DataFrame:
     """
     Parse text blocks from AWS Textract JSON into a pandas DataFrame.
     
@@ -103,34 +313,105 @@ def parse_text_blocks(data: dict, canvas_width: float = 1200, canvas_height: flo
             continue
     
     if not rows:
-        raise ValueError("No valid text blocks could be parsed from JSON")
+        raise ValueError("No valid text blocks could be parsed from Textract JSON")
     
     return pd.DataFrame(rows)
 
 
-def get_document_metadata(data: dict) -> Dict:
+def parse_text_blocks(data: dict, canvas_width: float = 1200, canvas_height: float = 900) -> pd.DataFrame:
     """
-    Extract document metadata from Textract JSON.
+    Parse text blocks from OCR JSON into a pandas DataFrame.
+    Auto-detects format (AWS Textract or Google Cloud Vision) and uses appropriate parser.
     
     Args:
-        data: Dictionary from AWS Textract
+        data: Dictionary from OCR service (AWS Textract or Google Cloud Vision)
+        canvas_width: Width of the canvas to scale coordinates
+        canvas_height: Height of the canvas to scale coordinates
+    
+    Returns:
+        DataFrame with parsed text blocks including scaled coordinates
+    """
+    # Auto-detect format
+    ocr_format = detect_ocr_format(data)
+    
+    if ocr_format == 'google_vision':
+        return parse_google_vision_blocks(data, canvas_width, canvas_height)
+    else:
+        # Default to Textract parser for backward compatibility
+        return parse_textract_blocks(data, canvas_width, canvas_height)
+
+
+def get_document_metadata(data: dict) -> Dict:
+    """
+    Extract document metadata from OCR JSON (AWS Textract or Google Cloud Vision).
+    
+    Args:
+        data: Dictionary from OCR service
         
     Returns:
         Dictionary with metadata
     """
     metadata = {}
     
-    if 'DocumentMetadata' in data:
-        metadata['pages'] = data['DocumentMetadata'].get('Pages', 1)
-    else:
-        metadata['pages'] = 1
+    # Auto-detect format
+    ocr_format = detect_ocr_format(data)
     
-    # Count different block types
-    if 'Blocks' in data:
-        blocks = data['Blocks']
-        metadata['total_blocks'] = len(blocks)
-        metadata['text_lines'] = sum(1 for b in blocks if b.get('BlockType') == 'LINE')
-        metadata['words'] = sum(1 for b in blocks if b.get('BlockType') == 'WORD')
+    if ocr_format == 'google_vision':
+        # Handle Google Cloud Vision format
+        if 'fullTextAnnotation' in data and 'pages' in data['fullTextAnnotation']:
+            pages = data['fullTextAnnotation']['pages']
+            metadata['pages'] = len(pages)
+            
+            total_blocks = 0
+            total_words = 0
+            total_paragraphs = 0
+            
+            for page in pages:
+                blocks = page.get('blocks', [])
+                total_blocks += len(blocks)
+                
+                for block in blocks:
+                    paragraphs = block.get('paragraphs', [])
+                    total_paragraphs += len(paragraphs)
+                    
+                    for paragraph in paragraphs:
+                        words = paragraph.get('words', [])
+                        total_words += len(words)
+            
+            metadata['total_blocks'] = total_blocks
+            metadata['text_lines'] = total_paragraphs  # Map paragraphs to lines
+            metadata['words'] = total_words
+        else:
+            metadata['pages'] = 1
+            metadata['total_blocks'] = 0
+            metadata['text_lines'] = 0
+            metadata['words'] = 0
+        
+        # Add image dimensions if available
+        if 'width' in data:
+            metadata['image_width'] = data['width']
+        if 'height' in data:
+            metadata['image_height'] = data['height']
+    
+    else:
+        # Handle AWS Textract format
+        if 'DocumentMetadata' in data:
+            metadata['pages'] = data['DocumentMetadata'].get('Pages', 1)
+        else:
+            metadata['pages'] = 1
+        
+        # Count different block types
+        if 'Blocks' in data:
+            blocks = data['Blocks']
+            metadata['total_blocks'] = len(blocks)
+            metadata['text_lines'] = sum(1 for b in blocks if b.get('BlockType') == 'LINE')
+            metadata['words'] = sum(1 for b in blocks if b.get('BlockType') == 'WORD')
+        else:
+            metadata['total_blocks'] = 0
+            metadata['text_lines'] = 0
+            metadata['words'] = 0
+    
+    metadata['format'] = ocr_format
     
     return metadata
 
