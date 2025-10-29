@@ -27,8 +27,8 @@ def parse_text_blocks(data: dict, canvas_width: float = 1200, canvas_height: flo
     
     Args:
         data: Dictionary from AWS Textract with 'Blocks' key
-        canvas_width: Width of the canvas to scale coordinates
-        canvas_height: Height of the canvas to scale coordinates
+        canvas_width: Width of the original detection coordinate space
+        canvas_height: Height of the original detection coordinate space
     
     Returns:
         DataFrame with parsed text blocks including scaled coordinates
@@ -135,15 +135,15 @@ def get_document_metadata(data: dict) -> Dict:
     return metadata
 
 
-def scale_ocr_to_detections(ocr_df: pd.DataFrame, detection_canvas_width: float, 
+def scale_ocr_to_detections(ocr_df: pd.DataFrame, detection_canvas_width: float,
                            detection_canvas_height: float) -> pd.DataFrame:
     """
     Scale OCR coordinates to match detection canvas size.
     
     Args:
         ocr_df: DataFrame with OCR text blocks
-        detection_canvas_width: Width of the detection canvas
-        detection_canvas_height: Height of the detection canvas
+        detection_canvas_width: Width of the detection coordinate space (without padding)
+        detection_canvas_height: Height of the detection coordinate space (without padding)
         
     Returns:
         DataFrame with rescaled coordinates
