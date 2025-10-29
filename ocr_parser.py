@@ -23,6 +23,9 @@ def detect_ocr_format(data: dict) -> str:
     if 'fullTextAnnotation' in data:
         if 'pages' in data['fullTextAnnotation']:
             return 'google_vision'
+    if 'textAnnotations' in data and isinstance(data.get('textAnnotations'), list):
+        if data['textAnnotations']:
+            return 'google_vision'
     
     # Default to textract for backward compatibility
     return 'textract'
@@ -73,161 +76,95 @@ def parse_google_vision_blocks(data: dict, canvas_width: float = 1200, canvas_he
     Returns:
         DataFrame with parsed text blocks including scaled coordinates
     """
-    if 'fullTextAnnotation' not in data:
-        raise ValueError("JSON must contain 'fullTextAnnotation' key")
-    
-    full_text = data['fullTextAnnotation']
-    if 'pages' not in full_text or not full_text['pages']:
-        raise ValueError("No pages found in fullTextAnnotation")
-    
-    # Get image dimensions for normalization
-    image_width = data.get('width', 1024)  # Default to common dimensions if not found
-    image_height = data.get('height', 768)
-    
+    text_annotations = data.get('textAnnotations')
+    if not text_annotations:
+        raise ValueError("JSON must contain 'textAnnotations' key with annotations")
+
+    # Skip the first entry because it contains the full text with a huge bounding box
+    word_entries = text_annotations[1:] if len(text_annotations) > 1 else []
+
+    if not word_entries:
+        raise ValueError("No word-level annotations found in textAnnotations")
+
+    # Determine image dimensions for normalization
+    image_width = data.get('width')
+    image_height = data.get('height')
+
+    if not image_width or not image_height:
+        max_x = 0
+        max_y = 0
+        for entry in word_entries:
+            vertices = entry.get('boundingPoly', {}).get('vertices', [])
+            for vertex in vertices:
+                max_x = max(max_x, vertex.get('x', 0) or 0)
+                max_y = max(max_y, vertex.get('y', 0) or 0)
+
+        # Avoid division by zero
+        image_width = image_width or max(max_x, 1)
+        image_height = image_height or max(max_y, 1)
+
     rows = []
-    
-    # Process each page (usually just one for single images)
-    for page in full_text['pages']:
-        if 'blocks' not in page:
-            continue
-            
-        for block in page.get('blocks', []):
-            # Skip non-text blocks
-            if block.get('blockType') != 'TEXT':
+
+    for entry in word_entries:
+        try:
+            text = entry.get('description', '')
+            if not text:
                 continue
-            
-            block_confidence = block.get('confidence', 0)
-            
-            # Process paragraphs within blocks
-            for paragraph in block.get('paragraphs', []):
-                para_confidence = paragraph.get('confidence', block_confidence)
-                
-                # Process words within paragraphs
-                for word in paragraph.get('words', []):
-                    try:
-                        # Get word confidence
-                        word_confidence = word.get('confidence', para_confidence)
-                        
-                        # Aggregate text from symbols
-                        word_text = ''
-                        for symbol in word.get('symbols', []):
-                            word_text += symbol.get('text', '')
-                        
-                        if not word_text:
-                            continue
-                        
-                        # Get bounding box vertices
-                        if 'boundingBox' not in word or 'vertices' not in word['boundingBox']:
-                            continue
-                        
-                        vertices = word['boundingBox']['vertices']
-                        if len(vertices) < 4:
-                            continue
-                        
-                        # Extract coordinates (absolute pixels)
-                        x_coords = [v.get('x', 0) for v in vertices]
-                        y_coords = [v.get('y', 0) for v in vertices]
-                        
-                        # Get bounding box extents
-                        x_min = min(x_coords)
-                        x_max = max(x_coords)
-                        y_min = min(y_coords)
-                        y_max = max(y_coords)
-                        
-                        # Normalize coordinates (0-1)
-                        left_norm = x_min / image_width
-                        top_norm = y_min / image_height
-                        width_norm = (x_max - x_min) / image_width
-                        height_norm = (y_max - y_min) / image_height
-                        
-                        # Scale to canvas coordinates
-                        x1 = left_norm * canvas_width
-                        y1 = top_norm * canvas_height
-                        x2 = (left_norm + width_norm) * canvas_width
-                        y2 = (top_norm + height_norm) * canvas_height
-                        
-                        # Center coordinates
-                        center_x = (x1 + x2) / 2
-                        center_y = (y1 + y2) / 2
-                        
-                        rows.append({
-                            'text': word_text,
-                            'block_type': 'WORD',  # Use consistent naming with Textract
-                            'confidence': word_confidence * 100,  # Convert to percentage
-                            'block_id': '',  # Google Vision doesn't provide IDs
-                            'left_norm': left_norm,
-                            'top_norm': top_norm,
-                            'width_norm': width_norm,
-                            'height_norm': height_norm,
-                            'x1': x1,
-                            'y1': y1,
-                            'x2': x2,
-                            'y2': y2,
-                            'center_x': center_x,
-                            'center_y': center_y,
-                            'width': x2 - x1,
-                            'height': y2 - y1
-                        })
-                        
-                    except (KeyError, ValueError, TypeError) as e:
-                        print(f"Error processing word: {e}")
-                        continue
-                
-                # Also add paragraph-level text if desired
-                # This aggregates all words in the paragraph
-                if paragraph.get('words'):
-                    try:
-                        para_text = ' '.join([
-                            ''.join([s.get('text', '') for s in w.get('symbols', [])])
-                            for w in paragraph['words']
-                        ])
-                        
-                        if para_text and 'boundingBox' in paragraph and 'vertices' in paragraph['boundingBox']:
-                            vertices = paragraph['boundingBox']['vertices']
-                            if len(vertices) >= 4:
-                                x_coords = [v.get('x', 0) for v in vertices]
-                                y_coords = [v.get('y', 0) for v in vertices]
-                                
-                                x_min = min(x_coords)
-                                x_max = max(x_coords)
-                                y_min = min(y_coords)
-                                y_max = max(y_coords)
-                                
-                                left_norm = x_min / image_width
-                                top_norm = y_min / image_height
-                                width_norm = (x_max - x_min) / image_width
-                                height_norm = (y_max - y_min) / image_height
-                                
-                                x1 = left_norm * canvas_width
-                                y1 = top_norm * canvas_height
-                                x2 = (left_norm + width_norm) * canvas_width
-                                y2 = (top_norm + height_norm) * canvas_height
-                                
-                                rows.append({
-                                    'text': para_text,
-                                    'block_type': 'LINE',  # Use LINE for paragraphs to match Textract
-                                    'confidence': para_confidence * 100,
-                                    'block_id': '',
-                                    'left_norm': left_norm,
-                                    'top_norm': top_norm,
-                                    'width_norm': width_norm,
-                                    'height_norm': height_norm,
-                                    'x1': x1,
-                                    'y1': y1,
-                                    'x2': x2,
-                                    'y2': y2,
-                                    'center_x': (x1 + x2) / 2,
-                                    'center_y': (y1 + y2) / 2,
-                                    'width': x2 - x1,
-                                    'height': y2 - y1
-                                })
-                    except (KeyError, ValueError, TypeError) as e:
-                        print(f"Error processing paragraph: {e}")
-                        continue
-    
+
+            vertices = entry.get('boundingPoly', {}).get('vertices', [])
+            if len(vertices) < 4:
+                continue
+
+            x_coords = [v.get('x', 0) or 0 for v in vertices]
+            y_coords = [v.get('y', 0) or 0 for v in vertices]
+
+            x_min = min(x_coords)
+            x_max = max(x_coords)
+            y_min = min(y_coords)
+            y_max = max(y_coords)
+
+            if image_width == 0 or image_height == 0:
+                continue
+
+            left_norm = x_min / image_width
+            top_norm = y_min / image_height
+            width_norm = (x_max - x_min) / image_width
+            height_norm = (y_max - y_min) / image_height
+
+            x1 = left_norm * canvas_width
+            y1 = top_norm * canvas_height
+            x2 = (left_norm + width_norm) * canvas_width
+            y2 = (top_norm + height_norm) * canvas_height
+
+            center_x = (x1 + x2) / 2
+            center_y = (y1 + y2) / 2
+
+            rows.append({
+                'text': text,
+                'block_type': 'WORD',
+                'confidence': 100.0,
+                'block_id': entry.get('mid', ''),
+                'left_norm': left_norm,
+                'top_norm': top_norm,
+                'width_norm': width_norm,
+                'height_norm': height_norm,
+                'x1': x1,
+                'y1': y1,
+                'x2': x2,
+                'y2': y2,
+                'center_x': center_x,
+                'center_y': center_y,
+                'width': x2 - x1,
+                'height': y2 - y1
+            })
+
+        except (KeyError, ValueError, TypeError) as e:
+            print(f"Error processing text annotation: {e}")
+            continue
+
     if not rows:
         raise ValueError("No valid text blocks could be parsed from Google Vision JSON")
-    
+
     return pd.DataFrame(rows)
 
 
@@ -361,7 +298,7 @@ def get_document_metadata(data: dict) -> Dict:
         if 'fullTextAnnotation' in data and 'pages' in data['fullTextAnnotation']:
             pages = data['fullTextAnnotation']['pages']
             metadata['pages'] = len(pages)
-            
+
             total_blocks = 0
             total_words = 0
             total_paragraphs = 0
@@ -381,6 +318,13 @@ def get_document_metadata(data: dict) -> Dict:
             metadata['total_blocks'] = total_blocks
             metadata['text_lines'] = total_paragraphs  # Map paragraphs to lines
             metadata['words'] = total_words
+        elif 'textAnnotations' in data:
+            annotations = data.get('textAnnotations') or []
+            word_entries = annotations[1:] if len(annotations) > 1 else []
+            metadata['pages'] = 1
+            metadata['total_blocks'] = len(word_entries)
+            metadata['text_lines'] = len(word_entries)
+            metadata['words'] = len(word_entries)
         else:
             metadata['pages'] = 1
             metadata['total_blocks'] = 0
