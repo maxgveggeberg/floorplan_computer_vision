@@ -165,6 +165,81 @@ def parse_google_vision_blocks(data: dict, canvas_width: float = 1200, canvas_he
     if not rows:
         raise ValueError("No valid text blocks could be parsed from Google Vision JSON")
 
+    # Derive line-level entries by grouping words with significant vertical overlap
+    word_rows = sorted(rows, key=lambda r: (r['top_norm'], r['left_norm']))
+    line_rows: List[Dict] = []
+    current_line: List[Dict] = []
+    current_top: Optional[float] = None
+    current_bottom: Optional[float] = None
+    tolerance = 0.02
+
+    def flush_line(words: List[Dict], line_index: int) -> None:
+        if not words:
+            return
+
+        left_norm = min(w['left_norm'] for w in words)
+        right_norm = max(w['left_norm'] + w['width_norm'] for w in words)
+        top_norm = min(w['top_norm'] for w in words)
+        bottom_norm = max(w['top_norm'] + w['height_norm'] for w in words)
+
+        x1 = min(w['x1'] for w in words)
+        y1 = min(w['y1'] for w in words)
+        x2 = max(w['x2'] for w in words)
+        y2 = max(w['y2'] for w in words)
+
+        width = x2 - x1
+        height = y2 - y1
+
+        line_rows.append({
+            'text': ' '.join(w['text'] for w in words),
+            'block_type': 'LINE',
+            'confidence': 100.0,
+            'block_id': f"line_{line_index}",
+            'left_norm': left_norm,
+            'top_norm': top_norm,
+            'width_norm': max(right_norm - left_norm, 0.0),
+            'height_norm': max(bottom_norm - top_norm, 0.0),
+            'x1': x1,
+            'y1': y1,
+            'x2': x2,
+            'y2': y2,
+            'center_x': (x1 + x2) / 2,
+            'center_y': (y1 + y2) / 2,
+            'width': width,
+            'height': height
+        })
+
+    line_index = 0
+
+    for word in word_rows:
+        word_top = word['top_norm']
+        word_bottom = word_top + word['height_norm']
+
+        if not current_line:
+            current_line = [word]
+            current_top = word_top
+            current_bottom = word_bottom
+            continue
+
+        assert current_top is not None and current_bottom is not None
+        overlap = min(current_bottom, word_bottom) - max(current_top, word_top)
+        min_height = min(current_bottom - current_top, word['height_norm'])
+
+        if overlap >= max(min_height, 0) * 0.3 or word_top <= (current_bottom + tolerance):
+            current_line.append(word)
+            current_top = min(current_top, word_top)
+            current_bottom = max(current_bottom, word_bottom)
+        else:
+            flush_line(current_line, line_index)
+            line_index += 1
+            current_line = [word]
+            current_top = word_top
+            current_bottom = word_bottom
+
+    flush_line(current_line, line_index)
+
+    rows.extend(line_rows)
+
     return pd.DataFrame(rows)
 
 
