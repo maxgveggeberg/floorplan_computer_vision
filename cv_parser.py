@@ -174,25 +174,25 @@ def parse_detections(data: dict, assume_center: bool = True) -> pd.DataFrame:
     return df
 
 
-def infer_canvas_size(df: pd.DataFrame) -> Tuple[float, float]:
+def infer_canvas_size(df: pd.DataFrame) -> Tuple[float, float, float, float]:
     """
     Infer canvas size from detection coordinates with padding.
-    
+
     Args:
         df: DataFrame with x2, y2 columns
-        
+
     Returns:
-        Tuple of (width, height) for canvas
+        Tuple of (padded_width, padded_height, base_width, base_height)
     """
     if df.empty:
-        return 1000, 1000
-    
+        return 1000, 1000, 1000, 1000
+
     max_x = df['x2'].max()
     max_y = df['y2'].max()
-    
+
     padding_factor = 1.1
-    
+
     canvas_width = max_x * padding_factor
     canvas_height = max_y * padding_factor
-    
-    return canvas_width, canvas_height
+
+    return canvas_width, canvas_height, max_x, max_y

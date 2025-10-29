@@ -290,7 +290,7 @@ else:
         if df_filtered.empty:
             st.warning("No detections match the current filters.")
         else:
-            canvas_w, canvas_h = cv_parser.infer_canvas_size(df_filtered)
+            canvas_w, canvas_h, base_w, base_h = cv_parser.infer_canvas_size(df_filtered)
 
             wall_mask = df_filtered['class_name'].str.lower() == 'wall'
             wall_detections = df_filtered.loc[wall_mask, [
@@ -372,12 +372,12 @@ else:
                         )
 
             # Add OCR overlay if available and enabled
-            if (st.session_state.ocr_df is not None and 
-                not st.session_state.ocr_df.empty and 
+            if (st.session_state.ocr_df is not None and
+                not st.session_state.ocr_df.empty and
                 st.session_state.get('show_ocr_overlay', True)):
-                
+
                 ocr_scaled = ocr_parser.scale_ocr_to_detections(
-                    st.session_state.ocr_df, canvas_w, canvas_h
+                    st.session_state.ocr_df, base_w, base_h
                 )
                 # Filter OCR data based on settings
                 ocr_filtered = ocr_scaled[ocr_scaled['confidence'] >= st.session_state.ocr_confidence_threshold]
@@ -550,12 +550,12 @@ else:
                         
                         # Check if floor plan data exists to get canvas dimensions
                         if not df_filtered.empty:
-                            canvas_w, canvas_h = cv_parser.infer_canvas_size(df_filtered)
+                            canvas_w, canvas_h, base_w, base_h = cv_parser.infer_canvas_size(df_filtered)
                         else:
                             # Use default canvas size if no floor plan loaded
-                            canvas_w, canvas_h = 1200, 900
-                        
-                        ocr_df = ocr_parser.parse_text_blocks(ocr_data, canvas_w, canvas_h)
+                            canvas_w, canvas_h, base_w, base_h = 1200, 900, 1200, 900
+
+                        ocr_df = ocr_parser.parse_text_blocks(ocr_data, base_w, base_h)
                         st.session_state.ocr_df = ocr_df
                         
                         # Save to database automatically
@@ -628,10 +628,10 @@ else:
         # Parse OCR if available
         if st.session_state.ocr_raw_json:
             try:
-                canvas_w, canvas_h = cv_parser.infer_canvas_size(df_filtered)
+                canvas_w, canvas_h, base_w, base_h = cv_parser.infer_canvas_size(df_filtered)
                 ocr_data = ocr_parser.load_textract_json(st.session_state.ocr_raw_json)
                 metadata = ocr_parser.get_document_metadata(ocr_data)
-                ocr_df = ocr_parser.parse_text_blocks(ocr_data, canvas_w, canvas_h)
+                ocr_df = ocr_parser.parse_text_blocks(ocr_data, base_w, base_h)
                 st.session_state.ocr_df = ocr_df
                 
                 # Display metadata
